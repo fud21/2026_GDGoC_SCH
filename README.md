@@ -1,12 +1,14 @@
-# StudyMate 프로젝트 개발 요약
+# StudyMate (스터디메이트)
 
-## 프로젝트 개요
-- **프로젝트명**: StudyMate (스터디메이트)
-- **목적**: 순천향대학교(SCH) 학생들을 위한 스터디 모집 웹 애플리케이션
-- **기술 스택**:
-  - **백엔드**: Spring Boot 4.1.0, Java 17, H2 Database (파일 저장), Spring Security, Firebase Admin SDK
-  - **프론트엔드**: React (create-react-app), Tailwind CSS, Axios, Firebase SDK
-  - **인증**: Firebase Authentication (이메일/비밀번호)
+순천향대학교(SCH) 학생들을 위한 스터디 모집 웹 애플리케이션입니다.
+
+## 기술 스택
+
+| 영역 | 스택 |
+|---|---|
+| 백엔드 | Spring Boot 4.1.0, Java 17, H2 Database (파일 저장), Spring Security, Firebase Admin SDK |
+| 프론트엔드 | React (Create React App), Tailwind CSS, Axios, Firebase SDK |
+| 인증 | Firebase Authentication (이메일/비밀번호, `@sch.ac.kr` 전용) |
 
 ---
 
@@ -14,7 +16,10 @@
 
 ```
 studymate/
-├── studymate/  (Spring Boot 백엔드)
+├── config/
+│   └── firebase/
+│       └── serviceAccount.json     ← 로컬 전용 (Git 제외, .gitignore)
+├── studymate/                       ← Spring Boot 백엔드
 │   └── src/main/java/com/studymate/studymate/
 │       ├── config/
 │       │   ├── FirebaseConfig.java
@@ -34,17 +39,43 @@ studymate/
 │       │   ├── StudyRepository.java
 │       │   └── UserRepository.java
 │       └── StudymateApplication.java
-└── frontend/  (React 프론트엔드)
+└── frontend/                        ← React 프론트엔드
     └── src/
-        ├── App.js
+        ├── api/
+        │   └── studyApi.js          # 모든 axios 호출 모음
+        ├── hooks/
+        │   ├── useAuth.js           # Firebase 인증, 로그인/회원가입/자동로그아웃
+        │   └── useStudy.js          # 스터디/프로필 도메인 상태 및 API 로직
+        ├── pages/
+        │   ├── LoginPage.js
+        │   ├── RegisterPage.js
+        │   ├── MainPage.js
+        │   ├── SearchPage.js
+        │   ├── CreateStudyPage.js
+        │   ├── StudyDetailPage.js
+        │   └── MyPage.js
+        ├── components/
+        │   ├── NavBar.js            # 하단 고정 네비게이션 바
+        │   ├── StudyCard.js         # 메인/검색 공용 스터디 카드
+        │   └── EditProfileModal.js  # 프로필 수정 모달
+        ├── App.js                   # 라우팅(currentPage) + 훅 조합만 담당
         └── firebase.js
 ```
+
+### 프론트엔드 아키텍처
+
+`App.js`는 전역 라우팅 상태(`currentPage`, `prevPage`)만 직접 소유하고, 나머지 로직은 두 개의 커스텀 훅으로 분리되어 있습니다.
+
+- **`useAuth`**: Firebase 인증 전체를 담당. `currentUserId`, 로그인/회원가입 폼 상태, `handleLogin`/`handleRegister`/`handleLogout`/`handleDeleteAccount`, 자동 로그인(`onAuthStateChanged`) 처리, 2시간 무활동 자동 로그아웃 타이머를 포함합니다.
+- **`useStudy`**: 스터디 목록/검색/생성/신청/찜/승인·거절·추방, 프로필 조회 및 수정 등 도메인 로직 전체를 담당합니다.
+
+각 페이지 컴포넌트(`pages/`)는 필요한 상태와 핸들러를 props로 전달받는 순수 프레젠테이션 컴포넌트이며, `NavBar`/`StudyCard`/`EditProfileModal`은 여러 페이지에서 재사용되는 공용 컴포넌트입니다.
 
 ---
 
 ## 핵심 설정
 
-### application.properties
+### `studymate/src/main/resources/application.properties`
 ```properties
 spring.application.name=studymate
 spring.datasource.url=jdbc:h2:file:./data/studymatedb;AUTO_SERVER=TRUE
@@ -55,38 +86,17 @@ spring.h2.console.enabled=true
 spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-firebase.config-path=classpath:firebase-service-account.json
+firebase.config-path=file:config/firebase/serviceAccount.json
 ```
 
-### firebase.js
-```javascript
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-         sendEmailVerification, onAuthStateChanged, browserSessionPersistence, 
-         setPersistence, signOut, deleteUser } from 'firebase/auth';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAyy_Rzo4_FK1YWL_dKRdQtzvxVYKzalf4",
-  authDomain: "studymate-69ac7.firebaseapp.com",
-  projectId: "studymate-69ac7",
-  storageBucket: "studymate-69ac7.firebasestorage.app",
-  messagingSenderId: "470233842626",
-  appId: "1:470233842626:web:ce8aa1d1b0cae26f144c5b",
-  measurementId: "G-5ZSXT92LM4"
-};
-
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-setPersistence(auth, browserSessionPersistence);
-export { signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-         sendEmailVerification, onAuthStateChanged, signOut, deleteUser };
-```
+### `frontend/src/firebase.js`
+Firebase 클라이언트 SDK 초기화 및 인증 관련 함수를 export합니다. `firebaseConfig`의 `apiKey`는 Firebase 웹 앱의 공개 식별자로, 클라이언트 코드에 포함되는 것이 정상이며 보안은 Firebase Console의 인증 도메인 제한과 보안 규칙으로 관리합니다. (서버 전용 관리자 키인 `serviceAccount.json`과는 별개입니다.)
 
 ---
 
 ## 엔티티 구조
 
-### User.java
+### `User.java`
 ```java
 @Entity
 @Table(name = "users")
@@ -102,7 +112,7 @@ public class User {
 }
 ```
 
-### Study.java
+### `Study.java`
 ```java
 @Entity
 @Table(name = "studies")
@@ -144,23 +154,23 @@ public class Study {
 
 ## API 목록
 
-### AuthController `/api/auth`
+### `AuthController` — `/api/auth`
 | Method | URL | 설명 |
-|--------|-----|------|
+|---|---|---|
 | POST | `/api/auth/sso` | Firebase 토큰 검증 후 유저 조회/생성 |
 
-### UserController `/api/users`
+### `UserController` — `/api/users`
 | Method | URL | 설명 |
-|--------|-----|------|
+|---|---|---|
 | GET | `/api/users/{id}/info` | 유저 정보 조회 |
 | GET | `/api/users/{id}/profile` | 프로필 + 스터디 통계 조회 |
 | GET | `/api/users/{id}/studies` | 유저의 스터디 목록 조회 |
 | PUT | `/api/users/{id}/profile` | 프로필 수정 |
 | DELETE | `/api/users/{id}` | 회원 탈퇴 (만든 스터디도 삭제) |
 
-### StudyController `/api/studies`
+### `StudyController` — `/api/studies`
 | Method | URL | 설명 |
-|--------|-----|------|
+|---|---|---|
 | GET | `/api/studies` | 스터디 목록 조회 (sort, status, keyword, category 필터) |
 | POST | `/api/studies` | 스터디 생성 |
 | GET | `/api/studies/{id}` | 스터디 상세 조회 |
@@ -205,7 +215,7 @@ public class Study {
 ## 해결한 주요 버그
 
 | 문제 | 원인 | 해결 |
-|------|------|------|
+|---|---|---|
 | 서버 실행 안됨 | `StudyRepository`의 잘못된 반환타입 `List<List<Study>>` | `List<Study>`로 수정 |
 | Firebase 초기화 실패 | `javax.annotation.PostConstruct` 사용 | `jakarta.annotation.PostConstruct`로 변경 |
 | 로그인 후 500 오류 | Firebase 토큰(922자)을 ID로 저장 시도 | Firebase 토큰 검증 성공 후 UID 사용 |
@@ -216,6 +226,10 @@ public class Study {
 ---
 
 ## 실행 방법
+
+### 사전 준비
+1. Firebase 콘솔에서 서비스 계정 키를 발급받아 `config/firebase/serviceAccount.json`에 저장 (Git에는 포함되지 않으므로 각자 로컬에 배치 필요)
+2. `frontend/src/firebase.js`의 `firebaseConfig` 값을 본인 Firebase 프로젝트 값으로 설정
 
 ### 백엔드
 ```bash
@@ -240,8 +254,9 @@ npm start
 
 ---
 
-## 현재 미완성/추가 예정 기능
+## 현재 미완성 / 추가 예정 기능
 - 프로필 수정 PUT API 405 오류 해결 필요
 - 팀원 목록 이름 표시 (`/api/users/{id}/info` API 연동)
-- 스터디 삭제 버튼 UI (방장 화면 하단)
+- "내가 만든 스터디" / "참여 중인 스터디" / "찜 목록" 전용 화면 (현재 alert로 임시 처리)
+- 알림 화면, 설정 화면
 - 배포 환경 설정 (MySQL 등 운영 DB로 교체)
