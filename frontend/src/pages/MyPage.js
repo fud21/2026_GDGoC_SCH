@@ -1,6 +1,8 @@
 import React from 'react';
 import EditProfileModal from '../components/EditProfileModal';
 
+const ADMIN_EMAIL = 'dbsgml0379@naver.com';
+
 export default function MyPage({
   profileSummary,
   isEditingProfile,
@@ -10,16 +12,15 @@ export default function MyPage({
   handleUpdateProfile,
   setCurrentPage,
   setPrevPage,
-  setSelectedCategory,
-  loadStudies,
-  handleDeleteAccount,
-  handleLogout,
+  openNotifications,
+  openInquiry,
+  openInquiryAdmin,
+  openSettings,
 }) {
-  const goToFilteredSearch = () => {
+  const isAdmin = profileSummary.user.email === ADMIN_EMAIL;
+  const goToPage = (page) => {
     setPrevPage('mypage');
-    setSelectedCategory('전체');
-    loadStudies();
-    setCurrentPage('search');
+    setCurrentPage(page);
     window.history.pushState(null, '', '');
   };
 
@@ -37,7 +38,7 @@ export default function MyPage({
     <div className="flex-1 pb-20 bg-gray-50">
       <div className="p-4 bg-white border-b border-gray-200 flex justify-between items-center sticky top-0 z-10">
         <h1 className="text-md font-bold">마이페이지</h1>
-        <span className="cursor-pointer" onClick={() => alert('설정 기능 준비 중입니다.')}>⚙️</span>
+        <span className="cursor-pointer" onClick={openSettings}>⚙️</span>
       </div>
       <div className="p-4 bg-white border-b border-gray-100">
         <div className="flex items-center justify-between">
@@ -83,30 +84,29 @@ export default function MyPage({
       </div>
 
       <div className="mt-3 bg-white border-y border-gray-200 divide-y divide-gray-100 text-sm">
-        <div onClick={goToFilteredSearch} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+        <div onClick={() => goToPage('myCreatedStudies')} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
           <span>내가 만든 스터디</span><span className="text-gray-400">&gt;</span>
         </div>
-        <div onClick={goToFilteredSearch} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+        <div onClick={() => goToPage('myJoinedStudies')} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
           <span>참여 중인 스터디</span><span className="text-gray-400">&gt;</span>
         </div>
         <div
-          onClick={() => alert(`현재 찜한 스터디 갯수는 ${profileSummary.wishStudyCount}개 입니다.`)}
+          onClick={() => goToPage('myWishlistedStudies')}
           className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50"
         >
           <span>찜 목록</span><span className="text-gray-400">&gt;</span>
         </div>
-        <div onClick={() => alert('알림 설정 시스템 커스터마이징 준비 중')} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
-          <span>알림 설정</span><span className="text-gray-400">&gt;</span>
+        <div onClick={openNotifications} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+          <span>알림</span><span className="text-gray-400">&gt;</span>
         </div>
-        <div onClick={() => alert('자주 묻는 질문 및 1:1 문의 채널 준비 중')} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+        <div onClick={openInquiry} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
           <span>문의하기</span><span className="text-gray-400">&gt;</span>
         </div>
-        <div onClick={handleLogout} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 text-red-600 font-medium">
-          <span>로그아웃</span><span>&gt;</span>
-        </div>
-        <div onClick={handleDeleteAccount} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 text-red-600 font-medium">
-          <span>회원탈퇴</span><span>&gt;</span>
-        </div>
+        {isAdmin && (
+          <div onClick={openInquiryAdmin} className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+            <span>문의 관리</span><span className="text-gray-400">&gt;</span>
+          </div>
+        )}
       </div>
     </div>
   );

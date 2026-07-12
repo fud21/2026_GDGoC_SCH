@@ -53,3 +53,23 @@ export const updateProfile = (userId, profileForm) =>
 
 export const deleteAccount = (userId) =>
   axios.delete(`${API_BASE}/users/${userId}`);
+
+// ── Notifications ─────────────────────────────────
+export const fetchNotifications = (userId) =>
+  axios.get(`${API_BASE}/notifications/${userId}`);
+
+export const markNotificationRead = (id) =>
+  axios.post(`${API_BASE}/notifications/${id}/read`);
+
+export const markAllNotificationsRead = (userId) =>
+  axios.post(`${API_BASE}/notifications/${userId}/read-all`);
+
+// ── Inquiries ──────────────────────────────────────
+export const submitInquiry = (payload) =>
+  axios.post(`${API_BASE}/inquiries`, payload);
+
+export const fetchAllInquiries = (requesterId) =>
+  axios.get(`${API_BASE}/inquiries`, { params: { requesterId } });
+
+export const answerInquiry = (id, requesterId, answer) =>
+  axios.post(`${API_BASE}/inquiries/${id}/answer`, { requesterId, answer });

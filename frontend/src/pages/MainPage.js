@@ -11,7 +11,7 @@ const CATEGORY_ICONS = {
 export default function MainPage({
   studies,
   selectedCategory,
-  setSelectedCategory,
+  selectCategory,
   categoryStats,
   searchKeyword,
   setSearchKeyword,
@@ -20,7 +20,7 @@ export default function MainPage({
   handleToggleWish,
   currentUserId,
   setCurrentPage,
-  loadStudies,
+  openNotifications,
 }) {
   return (
     <div className="flex-1 pb-20">
@@ -29,7 +29,7 @@ export default function MainPage({
           <h1 className="text-xl font-bold text-blue-600 cursor-pointer" onClick={() => setCurrentPage('main')}>
             StudyMate
           </h1>
-          <span className="p-2 cursor-pointer" onClick={() => alert('알림 목록이 비어있습니다.')}>🔔</span>
+          <span className="p-2 cursor-pointer" onClick={openNotifications}>🔔</span>
         </div>
         <form onSubmit={handleSearchSubmit} className="relative">
           <input
@@ -47,7 +47,7 @@ export default function MainPage({
         {['전체', '전공', '어학', '자격증', '취업', '기타'].map((cat) => (
           <button
             key={cat}
-            onClick={() => setSelectedCategory(cat)}
+            onClick={() => selectCategory(cat)}
             className={`px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
               selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
             }`}
@@ -66,10 +66,7 @@ export default function MainPage({
             .map(([category, count]) => (
               <div
                 key={category}
-                onClick={() => {
-                  setSelectedCategory(category);
-                  loadStudies();
-                }}
+                onClick={() => selectCategory(category)}
                 className="bg-white p-3 border border-gray-100 rounded-xl shadow-sm cursor-pointer hover:border-blue-300 transition"
               >
                 <div className="text-lg mb-1">{CATEGORY_ICONS[category] || '💻'}</div>

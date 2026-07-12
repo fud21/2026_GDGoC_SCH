@@ -1,7 +1,11 @@
 package com.studymate.studymate.controller;
 
+import com.studymate.studymate.entity.Notification;
 import com.studymate.studymate.entity.Study;
+import com.studymate.studymate.entity.User;
+import com.studymate.studymate.repository.NotificationRepository;
 import com.studymate.studymate.repository.StudyRepository;
+import com.studymate.studymate.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +24,16 @@ public class StudyController {
 
     @Autowired
     private StudyRepository studyRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    private String nameOf(String userId) {
+        return userRepository.findById(userId).map(User::getName).orElse(userId);
+    }
 
     @PostMapping
     public ResponseEntity<Study> createStudy(@RequestBody Study study) {
@@ -114,6 +128,14 @@ public class StudyController {
             }
             study.getPendingUserIds().add(userId);
             studyRepository.save(study);
+
+            notificationRepository.save(Notification.builder()
+                    .userId(study.getCreatorId())
+                    .type("APPLY_RECEIVED")
+                    .message("방장님! '" + study.getTitle() + "' 스터디 방에 " + nameOf(userId) + "님이 참여 신청을 하였습니다.")
+                    .relatedStudyId(study.getId())
+                    .build());
+
             return ResponseEntity.ok(study);
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -150,6 +172,14 @@ public class StudyController {
                 study.setStatus("마감");
             }
             studyRepository.save(study);
+
+            notificationRepository.save(Notification.builder()
+                    .userId(userId)
+                    .type("APPLY_APPROVED")
+                    .message(nameOf(userId) + "님! '" + study.getTitle() + "' 스터디 방에 참여하셨습니다! 스터디 방에서 다른 멤버들과 인사를 나눠보세요.")
+                    .relatedStudyId(study.getId())
+                    .build());
+
             return ResponseEntity.ok(study);
         }).orElse(ResponseEntity.notFound().build());
     }

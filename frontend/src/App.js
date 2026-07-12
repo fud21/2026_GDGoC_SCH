@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 import useAuth from './hooks/useAuth';
 import useStudy from './hooks/useStudy';
+import useNotification from './hooks/useNotification';
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -10,6 +11,11 @@ import SearchPage from './pages/SearchPage';
 import CreateStudyPage from './pages/CreateStudyPage';
 import StudyDetailPage from './pages/StudyDetailPage';
 import MyPage from './pages/MyPage';
+import MyStudyListPage from './pages/MyStudyListPage';
+import NotificationPage from './pages/NotificationPage';
+import InquiryPage from './pages/InquiryPage';
+import InquiryAdminPage from './pages/InquiryAdminPage';
+import SettingsPage from './pages/SettingsPage';
 import NavBar from './components/NavBar';
 
 export default function App() {
@@ -35,6 +41,7 @@ export default function App() {
   } = useAuth(setCurrentPage, (userId) => onAutoLoginLoadersRef.current(userId));
 
   const study = useStudy(currentUserId, currentPage, setCurrentPage, setPrevPage);
+  const notif = useNotification(currentUserId);
 
   // 매 렌더링마다 최신 클로저로 갱신 (렌더 중 ref 대입은 부수효과가 없어 안전함)
   onAutoLoginLoadersRef.current = (userId) => {
@@ -50,6 +57,10 @@ export default function App() {
         setCurrentPage(prevPage || 'main');
       } else if (currentPage === 'mypage') {
         setCurrentPage('main');
+      } else if (currentPage === 'myCreatedStudies' || currentPage === 'myJoinedStudies' || currentPage === 'myWishlistedStudies' || currentPage === 'inquiry' || currentPage === 'inquiryAdmin' || currentPage === 'settings') {
+        setCurrentPage(prevPage || 'mypage');
+      } else if (currentPage === 'notifications') {
+        setCurrentPage(prevPage || 'main');
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -83,6 +94,32 @@ export default function App() {
       window.history.pushState(null, '', '');
       return;
     }
+  };
+
+  const openNotifications = () => {
+    notif.loadNotifications(currentUserId);
+    setPrevPage(currentPage);
+    setCurrentPage('notifications');
+    window.history.pushState(null, '', '');
+  };
+
+  const openInquiry = () => {
+    setPrevPage('mypage');
+    setCurrentPage('inquiry');
+    window.history.pushState(null, '', '');
+  };
+
+  const openInquiryAdmin = () => {
+    notif.loadAdminInquiries();
+    setPrevPage('mypage');
+    setCurrentPage('inquiryAdmin');
+    window.history.pushState(null, '', '');
+  };
+
+  const openSettings = () => {
+    setPrevPage('mypage');
+    setCurrentPage('settings');
+    window.history.pushState(null, '', '');
   };
 
   if (isLoading) {
@@ -119,7 +156,7 @@ export default function App() {
         <MainPage
           studies={study.studies}
           selectedCategory={study.selectedCategory}
-          setSelectedCategory={study.setSelectedCategory}
+          selectCategory={study.selectCategory}
           categoryStats={study.categoryStats}
           searchKeyword={study.searchKeyword}
           setSearchKeyword={study.setSearchKeyword}
@@ -128,7 +165,7 @@ export default function App() {
           handleToggleWish={study.handleToggleWish}
           currentUserId={currentUserId}
           setCurrentPage={setCurrentPage}
-          loadStudies={study.loadStudies}
+          openNotifications={openNotifications}
         />
       )}
 
@@ -181,10 +218,77 @@ export default function App() {
           handleUpdateProfile={study.handleUpdateProfile}
           setCurrentPage={setCurrentPage}
           setPrevPage={setPrevPage}
-          setSelectedCategory={study.setSelectedCategory}
-          loadStudies={study.loadStudies}
-          handleDeleteAccount={handleDeleteAccount}
+          openNotifications={openNotifications}
+          openInquiry={openInquiry}
+          openInquiryAdmin={openInquiryAdmin}
+          openSettings={openSettings}
+        />
+      )}
+
+      {currentPage === 'myCreatedStudies' && (
+        <MyStudyListPage
+          title="내가 만든 스터디"
+          studies={study.userStudies.createdStudies}
+          viewStudyDetail={study.viewStudyDetail}
+          handleToggleWish={study.handleToggleWish}
+          currentUserId={currentUserId}
+          setCurrentPage={setCurrentPage}
+        />
+      )}
+
+      {currentPage === 'myJoinedStudies' && (
+        <MyStudyListPage
+          title="참여 중인 스터디"
+          studies={study.userStudies.joinedStudies}
+          viewStudyDetail={study.viewStudyDetail}
+          handleToggleWish={study.handleToggleWish}
+          currentUserId={currentUserId}
+          setCurrentPage={setCurrentPage}
+        />
+      )}
+
+      {currentPage === 'myWishlistedStudies' && (
+        <MyStudyListPage
+          title="찜 목록"
+          studies={study.userStudies.wishlistedStudies}
+          viewStudyDetail={study.viewStudyDetail}
+          handleToggleWish={study.handleToggleWish}
+          currentUserId={currentUserId}
+          setCurrentPage={setCurrentPage}
+        />
+      )}
+
+      {currentPage === 'notifications' && (
+        <NotificationPage
+          notifications={notif.notifications}
+          markAllNotificationsRead={notif.markAllNotificationsRead}
+          markNotificationRead={notif.markNotificationRead}
+          onBack={() => setCurrentPage(prevPage || 'main')}
+        />
+      )}
+
+      {currentPage === 'inquiry' && (
+        <InquiryPage
+          inquiryForm={notif.inquiryForm}
+          setInquiryForm={notif.setInquiryForm}
+          handleSubmitInquiry={notif.handleSubmitInquiry}
+          onBack={() => setCurrentPage('mypage')}
+        />
+      )}
+
+      {currentPage === 'inquiryAdmin' && (
+        <InquiryAdminPage
+          adminInquiries={notif.adminInquiries}
+          handleAnswerInquiry={notif.handleAnswerInquiry}
+          onBack={() => setCurrentPage('mypage')}
+        />
+      )}
+
+      {currentPage === 'settings' && (
+        <SettingsPage
           handleLogout={handleLogout}
+          handleDeleteAccount={handleDeleteAccount}
+          onBack={() => setCurrentPage('mypage')}
         />
       )}
 

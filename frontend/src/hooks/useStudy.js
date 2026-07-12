@@ -62,6 +62,11 @@ export default function useStudy(currentUserId, currentPage, setCurrentPage, set
     }
   };
 
+  const selectCategory = (category) => {
+    setSelectedCategory(category);
+    loadStudies({ sort: sortOrder, status: statusFilter, keyword: searchKeyword, category });
+  };
+
   const loadCategoryStats = async () => {
     try {
       const res = await studyApi.fetchCategoryStats();
@@ -234,7 +239,7 @@ export default function useStudy(currentUserId, currentPage, setCurrentPage, set
     // 목록/검색/필터
     studies,
     searchKeyword, setSearchKeyword,
-    selectedCategory, setSelectedCategory,
+    selectedCategory, setSelectedCategory, selectCategory,
     sortOrder, setSortOrder,
     statusFilter, setStatusFilter,
     categoryStats,

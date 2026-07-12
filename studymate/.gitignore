@@ -5,9 +5,12 @@ build/
 *.class
 **/data/
 # Firebase secret key
-config/firebase/ 
+config/firebase/
 .env
 .env.*
+
+# Mail credentials (Gmail app password)
+src/main/resources/application-local.properties
 !**/src/main/**/build/
 !**/src/test/**/build/
 
