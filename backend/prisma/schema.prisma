@@ -18,3 +18,29 @@ model User {
   name      String?
   createdAt DateTime @default(now())
 }
+
+// 관악구 안전데이터 통합 (CCTV, 보안등, 파출소, 범죄통계)
+model SafetyData {
+  id             Int     @id @default(autoincrement())
+  dataType       String // cctv | 보안등 | 파출소 | 범죄통계
+  sourceId       String // 원본 CSV의 id 컬럼
+  name           String?
+  address        String?
+  lat            Float?
+  lng            Float?
+  cctvPurpose    String?
+  cctvCount      Float?
+  cctvPixel      Float?
+  installYm      String?
+  lampId         String?
+  policeType     String?
+  crimeYear      Float?
+  crimeKill      Float?
+  crimeRob       Float?
+  crimeTheft     Float?
+  crimeViolence  Float?
+  lampType       String?
+
+  @@unique([dataType, sourceId])
+  @@index([dataType])
+}

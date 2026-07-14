@@ -27,6 +27,20 @@ app.post("/api/users", async (req, res) => {
   res.status(201).json(user);
 });
 
+app.get("/api/safety-data", async (req, res) => {
+  const { dataType, page = "1", pageSize = "50" } = req.query;
+  const take = Math.min(Number(pageSize) || 50, 200);
+  const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
+
+  const where = dataType ? { dataType } : undefined;
+  const [items, total] = await Promise.all([
+    prisma.safetyData.findMany({ where, skip, take }),
+    prisma.safetyData.count({ where }),
+  ]);
+
+  res.json({ total, page: Number(page), pageSize: take, items });
+});
+
 app.listen(PORT, () => {
   console.log(`Backend server running at http://localhost:${PORT}`);
 });
