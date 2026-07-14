@@ -36,7 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 
-### Firebase (중요) ###
+### Firebase ###
 config/firebase/serviceAccount.json
 **/serviceAccount.json
 
