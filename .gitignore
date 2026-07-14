@@ -1,0 +1,16 @@
+node_modules/
+.env
+*.local
+.claude/settings.local.json
+
+# backend
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# frontend build
+frontend/dist
+frontend/dist-ssr
+
+# logs
+*.log
+npm-debug.log*
