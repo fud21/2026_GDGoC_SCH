@@ -4,6 +4,11 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Survey from './pages/Survey'
 import Home from './pages/Home'
+import EduHub from './pages/EduHub'
+import Chapter from './pages/Chapter'
+import Lesson from './pages/Lesson'
+import FinalQuiz from './pages/FinalQuiz'
+import Glossary from './pages/Glossary'
 import Placeholder from './pages/Placeholder'
 import './App.css'
 
@@ -40,7 +45,31 @@ function App() {
           path="/edu"
           element={
             <Protected>
-              <Placeholder title="투자 교육" note="P1에서 구현 예정" />
+              <EduHub />
+            </Protected>
+          }
+        />
+        <Route
+          path="/edu/chapters/:id"
+          element={
+            <Protected>
+              <Chapter />
+            </Protected>
+          }
+        />
+        <Route
+          path="/edu/chapters/:id/final"
+          element={
+            <Protected>
+              <FinalQuiz />
+            </Protected>
+          }
+        />
+        <Route
+          path="/edu/lessons/:id"
+          element={
+            <Protected>
+              <Lesson />
             </Protected>
           }
         />
@@ -56,7 +85,7 @@ function App() {
           path="/glossary"
           element={
             <Protected>
-              <Placeholder title="용어 사전" note="P1에서 구현 예정" />
+              <Glossary />
             </Protected>
           }
         />

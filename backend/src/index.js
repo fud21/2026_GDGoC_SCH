@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import surveyRouter from "./routes/survey.js";
+import eduRouter from "./routes/edu.js";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use("/api", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/survey", surveyRouter);
+app.use("/api/edu", eduRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
