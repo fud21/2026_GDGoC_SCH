@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { pool } from "../config/db.js";
 import { requireAuth } from "../middleware/auth.js";
-import { awardXp, hasXpReason } from "../utils/xp.js";
+import { gradeQuizAnswers, QuizValidationError } from "../utils/quiz.js";
+import { awardXpOnce } from "../utils/xp.js";
 
 const router = Router();
 
@@ -100,11 +101,17 @@ router.post("/lessons/:id/complete", requireAuth, async (req, res) => {
     let awarded = 0;
     let stats = null;
     if (ins.affectedRows > 0) {
-      awarded = lesson.xp_reward;
-      stats = await awardXp(conn, req.user.id, awarded, `lesson:${lesson.id}`);
+      stats = await awardXpOnce(
+        conn,
+        req.user.id,
+        lesson.xp_reward,
+        `lesson:${lesson.id}`
+      );
+      awarded = stats.awarded ? lesson.xp_reward : 0;
     }
     await conn.commit();
-    res.json({ completed: true, xpAwarded: awarded, ...(stats || {}) });
+    const userStats = stats?.awarded ? { xp: stats.xp, level: stats.level } : {};
+    res.json({ completed: true, xpAwarded: awarded, ...userStats });
   } catch (err) {
     await conn.rollback();
     console.error(err);
@@ -114,28 +121,13 @@ router.post("/lessons/:id/complete", requireAuth, async (req, res) => {
   }
 });
 
-// 퀴즈 채점 공통 로직
-async function gradeAnswers(conn, userId, questionRows, answers) {
-  const byId = new Map(questionRows.map((q) => [q.id, q]));
-  const results = [];
-  let correct = 0;
-  for (const a of answers) {
-    const q = byId.get(a.questionId);
-    if (!q) continue;
-    const isCorrect = String(a.chosen).trim() === String(q.answer).trim();
-    if (isCorrect) correct += 1;
+async function recordQuizAttempts(conn, userId, results) {
+  for (const result of results) {
     await conn.query(
       "INSERT INTO user_quiz_attempts (user_id, question_id, chosen, is_correct) VALUES (?, ?, ?, ?)",
-      [userId, q.id, String(a.chosen), isCorrect]
+      [userId, result.questionId, result.chosen, result.correct]
     );
-    results.push({
-      questionId: q.id,
-      correct: isCorrect,
-      answer: q.answer,
-      explanation: q.explanation,
-    });
   }
-  return { results, correct };
 }
 
 // 레슨 퀴즈 제출
@@ -153,27 +145,28 @@ router.post("/lessons/:id/quiz", requireAuth, async (req, res) => {
     if (questions.length === 0) {
       return res.status(404).json({ error: "이 레슨에는 퀴즈가 없습니다" });
     }
+    const { results, correct } = gradeQuizAnswers(questions, answers);
     await conn.beginTransaction();
-    const { results, correct } = await gradeAnswers(
-      conn,
-      req.user.id,
-      questions,
-      answers
-    );
+    await recordQuizAttempts(conn, req.user.id, results);
     // 전문항 정답 보너스는 레슨당 1회
     let bonus = 0;
     const bonusReason = `quiz_bonus:${req.params.id}`;
-    if (
-      correct === questions.length &&
-      !(await hasXpReason(conn, req.user.id, bonusReason))
-    ) {
-      bonus = QUIZ_BONUS_XP;
-      await awardXp(conn, req.user.id, bonus, bonusReason);
+    if (correct === questions.length) {
+      const xpResult = await awardXpOnce(
+        conn,
+        req.user.id,
+        QUIZ_BONUS_XP,
+        bonusReason
+      );
+      bonus = xpResult.awarded ? QUIZ_BONUS_XP : 0;
     }
     await conn.commit();
     res.json({ total: questions.length, correct, bonusXp: bonus, results });
   } catch (err) {
     await conn.rollback();
+    if (err instanceof QuizValidationError) {
+      return res.status(400).json({ error: err.message });
+    }
     console.error(err);
     res.status(500).json({ error: "채점 중 오류가 발생했습니다" });
   } finally {
@@ -212,20 +205,21 @@ router.post("/chapters/:id/final", requireAuth, async (req, res) => {
     if (questions.length === 0) {
       return res.status(404).json({ error: "이 챕터에는 종합퀴즈가 없습니다" });
     }
+    const { results, correct } = gradeQuizAnswers(questions, answers);
     await conn.beginTransaction();
-    const { results, correct } = await gradeAnswers(
-      conn,
-      req.user.id,
-      questions,
-      answers
-    );
+    await recordQuizAttempts(conn, req.user.id, results);
     const scorePct = Math.round((correct / questions.length) * 100);
     const passed = scorePct >= FINAL_PASS_PCT;
     let xpAwarded = 0;
     const reason = `final:${req.params.id}`;
-    if (passed && !(await hasXpReason(conn, req.user.id, reason))) {
-      xpAwarded = FINAL_XP;
-      await awardXp(conn, req.user.id, xpAwarded, reason);
+    if (passed) {
+      const xpResult = await awardXpOnce(
+        conn,
+        req.user.id,
+        FINAL_XP,
+        reason
+      );
+      xpAwarded = xpResult.awarded ? FINAL_XP : 0;
     }
     await conn.commit();
     res.json({
@@ -238,6 +232,9 @@ router.post("/chapters/:id/final", requireAuth, async (req, res) => {
     });
   } catch (err) {
     await conn.rollback();
+    if (err instanceof QuizValidationError) {
+      return res.status(400).json({ error: err.message });
+    }
     console.error(err);
     res.status(500).json({ error: "채점 중 오류가 발생했습니다" });
   } finally {

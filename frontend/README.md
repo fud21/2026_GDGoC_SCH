@@ -1,16 +1,24 @@
-# React + Vite
+# GDGoC SCH 프론트엔드
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+투자 교육·모의투자 플랫폼의 모바일 우선 React SPA입니다. 전체 설치 및 DB/백엔드
+실행 순서는 루트 [README](../README.md)를 참고하세요.
 
-Currently, two official plugins are available:
+## 명령어
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+npm run lint
+npm run build
+```
 
-## React Compiler
+개발 서버는 `/api` 요청을 `http://localhost:4000`의 Express 백엔드로 프록시합니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 구현 범위
 
-## Expanding the Oxlint configuration
+- 인증 및 투자 성향 온보딩
+- 홈의 레벨/XP 현황
+- 챕터·레슨·퀴즈·용어사전
+- 모든 화면의 교육 목적 고지
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+모의투자와 AI 어시스턴트는 후속 단계입니다.

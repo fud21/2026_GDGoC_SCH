@@ -221,7 +221,8 @@ CREATE TABLE IF NOT EXISTS xp_events (
   amount INT NOT NULL,
   reason VARCHAR(100) NOT NULL,  -- lesson_complete:12, quiz_pass:3, ...
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uq_xp_events_user_reason (user_id, reason)
 );
 
 -- ---------------------------------------------------------------------------

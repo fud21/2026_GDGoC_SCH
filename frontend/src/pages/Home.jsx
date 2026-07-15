@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/useAuth'
 
 export default function Home() {
   const { user, logout } = useAuth()
@@ -53,10 +53,6 @@ export default function Home() {
           </Link>
         )}
       </nav>
-
-      <p className="disclaimer">
-        본 서비스는 교육 목적의 모의투자이며 실제 투자 권유가 아닙니다.
-      </p>
     </div>
   )
 }

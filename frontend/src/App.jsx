@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './context/AuthContext'
+import { useAuth } from './context/useAuth'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Survey from './pages/Survey'
@@ -91,6 +91,9 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <p className="disclaimer">
+        본 서비스는 교육 목적의 모의투자이며 실제 투자 권유가 아닙니다.
+      </p>
     </div>
   )
 }
