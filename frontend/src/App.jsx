@@ -9,7 +9,7 @@ import Chapter from './pages/Chapter'
 import Lesson from './pages/Lesson'
 import FinalQuiz from './pages/FinalQuiz'
 import Glossary from './pages/Glossary'
-import Placeholder from './pages/Placeholder'
+import Sim from './pages/Sim'
 import './App.css'
 
 function Protected({ children }) {
@@ -77,7 +77,7 @@ function App() {
           path="/sim"
           element={
             <Protected>
-              <Placeholder title="모의투자" note="P2에서 구현 예정" />
+              <Sim />
             </Protected>
           }
         />
