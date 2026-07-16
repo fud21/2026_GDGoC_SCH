@@ -611,3 +611,36 @@ button.ghost {
   padding: 10px 14px;
   font-size: 0.9rem;
 }
+
+/* 시나리오 / 심화 */
+.chapter-card.locked {
+  opacity: 0.55;
+}
+
+.chapter-card button {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.news-title {
+  margin: 20px 0 10px;
+}
+
+.lesson-content table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+  margin: 12px 0;
+}
+
+.lesson-content th,
+.lesson-content td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: right;
+}
+
+.lesson-content th:first-child,
+.lesson-content td:first-child {
+  text-align: left;
+}

@@ -10,6 +10,10 @@ import Lesson from './pages/Lesson'
 import FinalQuiz from './pages/FinalQuiz'
 import Glossary from './pages/Glossary'
 import Sim from './pages/Sim'
+import Scenarios from './pages/Scenarios'
+import Replay from './pages/Replay'
+import Adv from './pages/Adv'
+import AdvMaterial from './pages/AdvMaterial'
 import './App.css'
 
 function Protected({ children }) {
@@ -78,6 +82,38 @@ function App() {
           element={
             <Protected>
               <Sim />
+            </Protected>
+          }
+        />
+        <Route
+          path="/sim/scenarios"
+          element={
+            <Protected>
+              <Scenarios />
+            </Protected>
+          }
+        />
+        <Route
+          path="/sim/replay/:id"
+          element={
+            <Protected>
+              <Replay />
+            </Protected>
+          }
+        />
+        <Route
+          path="/adv"
+          element={
+            <Protected>
+              <Adv />
+            </Protected>
+          }
+        />
+        <Route
+          path="/adv/:id"
+          element={
+            <Protected>
+              <AdvMaterial />
             </Protected>
           }
         />

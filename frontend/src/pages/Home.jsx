@@ -42,6 +42,14 @@ export default function Home() {
           <h2>모의투자</h2>
           <p>가상 코인으로 실전 연습</p>
         </Link>
+        <Link className="menu-card" to="/sim/scenarios">
+          <h2>과거로 가기</h2>
+          <p>실제 과거 장세 리플레이 (Lv3+)</p>
+        </Link>
+        <Link className="menu-card" to="/adv">
+          <h2>심화 교육</h2>
+          <p>기사·리포트·재무제표 독해 (Lv5+)</p>
+        </Link>
         <Link className="menu-card" to="/glossary">
           <h2>용어 사전</h2>
           <p>모르는 용어 바로 검색</p>

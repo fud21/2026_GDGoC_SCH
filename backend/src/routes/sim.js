@@ -15,8 +15,17 @@ import {
   allowedOrderTypes,
   TRADE_FEE_RATE,
 } from "../data/simRules.js";
+import {
+  pricesAtClock,
+  fillOpenOrdersHistorical,
+  buildReviewReport,
+  parseInstrumentIds,
+} from "../services/scenarioEngine.js";
+import { awardXpOnce } from "../utils/xp.js";
 
 const router = Router();
+
+const SCENARIO_XP = 30; // 시나리오 완주 보상 (시나리오당 1회)
 
 async function getUserLevel(userId) {
   const [[u]] = await pool.query("SELECT level FROM users WHERE id = ?", [
@@ -96,12 +105,45 @@ router.get("/candles", requireAuth, async (req, res) => {
   }
 });
 
-// 진행 중인 라이브 세션 (없으면 null)
+// 시나리오 목록 (레벨 잠금 + 내 진행 상태 포함)
+router.get("/scenarios", requireAuth, async (req, res) => {
+  try {
+    const level = await getUserLevel(req.user.id);
+    const [scenarios] = await pool.query(
+      "SELECT id, title, description, start_ts, end_ts, min_level FROM scenarios ORDER BY min_level, id"
+    );
+    const [mine] = await pool.query(
+      "SELECT id, scenario_id, status FROM sim_sessions WHERE user_id = ? AND mode = 'historical'",
+      [req.user.id]
+    );
+    res.json(
+      scenarios.map((s) => {
+        const sessions = mine.filter((m) => m.scenario_id === s.id);
+        const active = sessions.find((m) => m.status === "active");
+        return {
+          id: s.id,
+          title: s.title,
+          description: s.description,
+          minLevel: s.min_level,
+          locked: level < s.min_level,
+          activeSessionId: active?.id ?? null,
+          completed: sessions.some((m) => m.status === "ended"),
+        };
+      })
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "시나리오 조회 중 오류가 발생했습니다" });
+  }
+});
+
+// 진행 중인 세션 (모드별, 없으면 null)
 router.get("/sessions/active", requireAuth, async (req, res) => {
+  const mode = req.query.mode === "historical" ? "historical" : "live";
   try {
     const [[session]] = await pool.query(
-      "SELECT id FROM sim_sessions WHERE user_id = ? AND mode = 'live' AND status = 'active' ORDER BY id DESC LIMIT 1",
-      [req.user.id]
+      "SELECT id FROM sim_sessions WHERE user_id = ? AND mode = ? AND status = 'active' ORDER BY id DESC LIMIT 1",
+      [req.user.id, mode]
     );
     res.json({ sessionId: session?.id ?? null });
   } catch (err) {
@@ -110,12 +152,14 @@ router.get("/sessions/active", requireAuth, async (req, res) => {
   }
 });
 
-// 세션 시작 (라이브, 유저당 동시 1개)
+// 세션 시작 (모드별 동시 1개. historical은 scenarioId 필요 + 레벨 검사)
 router.post("/sessions", requireAuth, async (req, res) => {
+  const mode = req.body?.mode === "historical" ? "historical" : "live";
+  const scenarioId = req.body?.scenarioId ? Number(req.body.scenarioId) : null;
   try {
     const [[existing]] = await pool.query(
-      "SELECT id FROM sim_sessions WHERE user_id = ? AND mode = 'live' AND status = 'active' LIMIT 1",
-      [req.user.id]
+      "SELECT id FROM sim_sessions WHERE user_id = ? AND mode = ? AND status = 'active' LIMIT 1",
+      [req.user.id, mode]
     );
     if (existing) {
       return res
@@ -124,9 +168,30 @@ router.post("/sessions", requireAuth, async (req, res) => {
     }
     const level = await getUserLevel(req.user.id);
     const { seedMoney } = simRulesForLevel(level);
+
+    if (mode === "live") {
+      const [ins] = await pool.query(
+        "INSERT INTO sim_sessions (user_id, mode, seed_money, cash) VALUES (?, 'live', ?, ?)",
+        [req.user.id, seedMoney, seedMoney]
+      );
+      return res.status(201).json({ sessionId: ins.insertId, seedMoney });
+    }
+
+    // historical
+    const [[scenario]] = await pool.query(
+      "SELECT * FROM scenarios WHERE id = ?",
+      [scenarioId]
+    );
+    if (!scenario) return res.status(404).json({ error: "시나리오가 없습니다" });
+    if (level < scenario.min_level) {
+      return res
+        .status(403)
+        .json({ error: `이 시나리오는 레벨 ${scenario.min_level}부터 도전할 수 있어요` });
+    }
     const [ins] = await pool.query(
-      "INSERT INTO sim_sessions (user_id, mode, seed_money, cash) VALUES (?, 'live', ?, ?)",
-      [req.user.id, seedMoney, seedMoney]
+      `INSERT INTO sim_sessions (user_id, mode, scenario_id, seed_money, cash, sim_clock)
+       VALUES (?, 'historical', ?, ?, ?, ?)`,
+      [req.user.id, scenarioId, seedMoney, seedMoney, scenario.start_ts]
     );
     res.status(201).json({ sessionId: ins.insertId, seedMoney });
   } catch (err) {
@@ -145,18 +210,36 @@ async function loadOwnSession(conn, userId, sessionId, { forUpdate = false } = {
   return session;
 }
 
-// 포트폴리오 (미체결 지정가 lazy fill 포함)
+// 세션 모드에 맞는 종목/가격 컨텍스트
+async function sessionContext(conn, session) {
+  if (session.mode === "live") {
+    const instruments = await loadLiveInstruments();
+    const prices = await livePriceMap(instruments);
+    return { instruments, prices, scenario: null };
+  }
+  const [[scenario]] = await conn.query(
+    "SELECT * FROM scenarios WHERE id = ?",
+    [session.scenario_id]
+  );
+  const ids = parseInstrumentIds(scenario.instrument_ids);
+  const [instruments] = await conn.query(
+    "SELECT id, symbol, display_name, real_name FROM instruments WHERE id IN (?)",
+    [ids]
+  );
+  const prices = await pricesAtClock(conn, ids, session.sim_clock);
+  return { instruments, prices, scenario };
+}
+
+// 포트폴리오 (라이브: 미체결 지정가 lazy fill 포함)
 router.get("/sessions/:id", requireAuth, async (req, res) => {
   const conn = await pool.getConnection();
   try {
-    const instruments = await loadLiveInstruments();
-    const prices = await livePriceMap(instruments);
-
     await conn.beginTransaction();
     const session = await loadOwnSession(conn, req.user.id, req.params.id, {
       forUpdate: true,
     });
-    if (session.status === "active") {
+    const { instruments, prices, scenario } = await sessionContext(conn, session);
+    if (session.mode === "live" && session.status === "active") {
       await fillOpenOrders(conn, session.id, prices);
     }
     // fill 이후 잔고가 바뀌었을 수 있으니 다시 읽는다
@@ -171,6 +254,37 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
        WHERE o.session_id = ? AND o.status = 'open' ORDER BY o.id DESC`,
       [session.id]
     );
+
+    // historical 부가 정보: 시나리오 진행도 + 시장 요약 카드(당시 뉴스)
+    let extra = {};
+    if (session.mode === "historical" && scenario) {
+      const total =
+        new Date(scenario.end_ts).getTime() - new Date(scenario.start_ts).getTime();
+      const elapsed =
+        new Date(fresh.sim_clock).getTime() - new Date(scenario.start_ts).getTime();
+      const [articles] = await conn.query(
+        `SELECT id, published_at, title, body, source FROM articles
+         WHERE published_at BETWEEN ? AND ? ORDER BY published_at DESC LIMIT 3`,
+        [scenario.start_ts, fresh.sim_clock]
+      );
+      extra = {
+        simClock: fresh.sim_clock,
+        progress: total > 0 ? Math.min(1, elapsed / total) : 0,
+        scenario: {
+          id: scenario.id,
+          title: scenario.title,
+          endTs: scenario.end_ts,
+        },
+        instruments: instruments.map((i) => ({
+          id: i.id,
+          displayName: i.display_name,
+          price: prices.get(i.id) ?? null,
+          // real_name은 종료 후에만 공개
+          realName: fresh.status === "ended" ? i.real_name : null,
+        })),
+        articles,
+      };
+    }
     await conn.commit();
 
     res.json({
@@ -186,6 +300,7 @@ router.get("/sessions/:id", requireAuth, async (req, res) => {
         qty: Number(o.qty),
         price: Number(o.price),
       })),
+      ...extra,
     });
   } catch (err) {
     await conn.rollback();
@@ -224,15 +339,21 @@ router.post("/sessions/:id/orders", requireAuth, async (req, res) => {
         .json({ error: "지정가 주문은 레벨 3부터 사용할 수 있어요" });
     }
 
-    const instruments = await loadLiveInstruments();
+    await conn.beginTransaction();
+    const session = await loadOwnSession(conn, req.user.id, req.params.id, {
+      forUpdate: true,
+    });
+    if (session.status !== "active") {
+      throw new SimError("종료된 세션입니다");
+    }
+    const { instruments, prices } = await sessionContext(conn, session);
     const instrument = instruments.find((i) => i.id === Number(instrumentId));
     if (!instrument) {
-      return res.status(404).json({ error: "종목이 없습니다" });
+      throw new SimError("종목이 없습니다", 404);
     }
-    const prices = await livePriceMap(instruments);
     const marketPrice = prices.get(instrument.id);
     if (!marketPrice) {
-      return res.status(503).json({ error: "현재가를 가져올 수 없습니다" });
+      throw new SimError("현재가를 가져올 수 없습니다", 503);
     }
 
     // 수량 결정: 매수는 금액 입력도 허용 (금액 → 수량 환산)
@@ -242,22 +363,15 @@ router.post("/sessions/:id/orders", requireAuth, async (req, res) => {
     }
     qty = roundQty(Number(qty));
     if (!Number.isFinite(qty) || qty <= 0) {
-      return res.status(400).json({ error: "수량이 올바르지 않습니다" });
+      throw new SimError("수량이 올바르지 않습니다");
     }
     if (orderType === "LIMIT") {
       const p = Number(price);
       if (!Number.isFinite(p) || p <= 0) {
-        return res.status(400).json({ error: "지정가가 올바르지 않습니다" });
+        throw new SimError("지정가가 올바르지 않습니다");
       }
     }
 
-    await conn.beginTransaction();
-    const session = await loadOwnSession(conn, req.user.id, req.params.id, {
-      forUpdate: true,
-    });
-    if (session.status !== "active") {
-      throw new SimError("종료된 세션입니다");
-    }
     const result = await placeOrder(conn, session, {
       instrumentId: instrument.id,
       side,
@@ -343,14 +457,12 @@ router.get("/sessions/:id/orders", requireAuth, async (req, res) => {
 router.post("/sessions/:id/end", requireAuth, async (req, res) => {
   const conn = await pool.getConnection();
   try {
-    const instruments = await loadLiveInstruments();
-    const prices = await livePriceMap(instruments);
-
     await conn.beginTransaction();
     const session = await loadOwnSession(conn, req.user.id, req.params.id, {
       forUpdate: true,
     });
     if (session.status !== "active") throw new SimError("이미 종료된 세션입니다");
+    const { prices } = await sessionContext(conn, session);
 
     const [openOrders] = await conn.query(
       "SELECT id FROM sim_orders WHERE session_id = ? AND status = 'open'",
@@ -384,6 +496,145 @@ router.post("/sessions/:id/end", requireAuth, async (req, res) => {
     }
     console.error(err);
     res.status(500).json({ error: "종료 처리 중 오류가 발생했습니다" });
+  } finally {
+    conn.release();
+  }
+});
+
+// (시나리오) 시간 전진: 하루 단위로 sim_clock을 진행하고 지정가를 체결한다.
+// 종료 시각에 도달하면 자동 종료 + 수익률 확정 + XP 지급.
+router.post("/sessions/:id/tick", requireAuth, async (req, res) => {
+  const days = Math.min(Math.max(Number(req.body?.days ?? 1), 1), 30);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const session = await loadOwnSession(conn, req.user.id, req.params.id, {
+      forUpdate: true,
+    });
+    if (session.mode !== "historical") throw new SimError("시나리오 세션이 아닙니다");
+    if (session.status !== "active") throw new SimError("종료된 세션입니다");
+
+    const [[scenario]] = await conn.query(
+      "SELECT * FROM scenarios WHERE id = ?",
+      [session.scenario_id]
+    );
+    const prevClock = new Date(session.sim_clock);
+    const endTs = new Date(scenario.end_ts);
+    let nextClock = new Date(prevClock.getTime() + days * 86_400_000);
+    if (nextClock > endTs) nextClock = endTs;
+
+    // 전진 구간의 일봉 고가/저가로 미체결 지정가 체결
+    await fillOpenOrdersHistorical(conn, session.id, prevClock, nextClock);
+    await conn.query("UPDATE sim_sessions SET sim_clock = ? WHERE id = ?", [
+      nextClock,
+      session.id,
+    ]);
+
+    let ended = false;
+    let report = null;
+    let xpAwarded = 0;
+    if (nextClock.getTime() >= endTs.getTime()) {
+      // 자동 종료: 미체결 취소(환불) → 종가 평가 → 확정
+      const [openOrders] = await conn.query(
+        "SELECT id FROM sim_orders WHERE session_id = ? AND status = 'open'",
+        [session.id]
+      );
+      for (const o of openOrders) {
+        await cancelOrder(conn, session.id, o.id);
+      }
+      const [[fresh]] = await conn.query(
+        "SELECT * FROM sim_sessions WHERE id = ?",
+        [session.id]
+      );
+      const ids = parseInstrumentIds(scenario.instrument_ids);
+      const prices = await pricesAtClock(conn, ids, nextClock);
+      const valuation = await valueSession(conn, fresh, prices);
+      await conn.query(
+        "UPDATE sim_sessions SET status = 'ended', final_return = ?, ended_at = NOW() WHERE id = ?",
+        [valuation.returnRate.toFixed(4), session.id]
+      );
+      const xpResult = await awardXpOnce(
+        conn,
+        req.user.id,
+        SCENARIO_XP,
+        `scenario:${scenario.id}`
+      );
+      xpAwarded = xpResult.awarded ? SCENARIO_XP : 0;
+      const [[endedSession]] = await conn.query(
+        "SELECT * FROM sim_sessions WHERE id = ?",
+        [session.id]
+      );
+      report = await buildReviewReport(conn, endedSession, scenario);
+      ended = true;
+    }
+    await conn.commit();
+    res.json({ simClock: nextClock, ended, xpAwarded, report });
+  } catch (err) {
+    await conn.rollback();
+    if (err instanceof SimError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error(err);
+    res.status(500).json({ error: "시간 진행 중 오류가 발생했습니다" });
+  } finally {
+    conn.release();
+  }
+});
+
+// (시나리오) 종료 리포트: 종목 공개 + B&H 벤치마크
+router.get("/sessions/:id/report", requireAuth, async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const session = await loadOwnSession(conn, req.user.id, req.params.id);
+    if (session.mode !== "historical" || session.status !== "ended") {
+      throw new SimError("종료된 시나리오 세션이 아닙니다");
+    }
+    const [[scenario]] = await conn.query(
+      "SELECT * FROM scenarios WHERE id = ?",
+      [session.scenario_id]
+    );
+    res.json(await buildReviewReport(conn, session, scenario));
+  } catch (err) {
+    if (err instanceof SimError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error(err);
+    res.status(500).json({ error: "리포트 조회 중 오류가 발생했습니다" });
+  } finally {
+    conn.release();
+  }
+});
+
+// (시나리오) 차트용 캔들: 시작~sim_clock까지만 반환한다 (미래 누출 방지)
+router.get("/sessions/:id/scenario-candles", requireAuth, async (req, res) => {
+  const instrumentId = Number(req.query.instrumentId);
+  if (!instrumentId) {
+    return res.status(400).json({ error: "instrumentId가 필요합니다" });
+  }
+  const conn = await pool.getConnection();
+  try {
+    const session = await loadOwnSession(conn, req.user.id, req.params.id);
+    if (session.mode !== "historical") throw new SimError("시나리오 세션이 아닙니다");
+    const [[scenario]] = await conn.query(
+      "SELECT instrument_ids, start_ts FROM scenarios WHERE id = ?",
+      [session.scenario_id]
+    );
+    if (!parseInstrumentIds(scenario.instrument_ids).includes(instrumentId)) {
+      throw new SimError("이 시나리오의 종목이 아닙니다", 404);
+    }
+    const until = session.status === "ended" ? new Date() : session.sim_clock;
+    const [rows] = await conn.query(
+      `SELECT ts, close FROM price_candles
+       WHERE instrument_id = ? AND ts >= ? AND ts <= ? ORDER BY ts`,
+      [instrumentId, scenario.start_ts, until]
+    );
+    res.json(rows.map((r) => ({ ts: r.ts, close: Number(r.close) })));
+  } catch (err) {
+    if (err instanceof SimError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error(err);
+    res.status(500).json({ error: "캔들 조회 중 오류가 발생했습니다" });
   } finally {
     conn.release();
   }

@@ -7,6 +7,7 @@ import surveyRouter from "./routes/survey.js";
 import eduRouter from "./routes/edu.js";
 import simRouter from "./routes/sim.js";
 import assistantRouter from "./routes/assistant.js";
+import advRouter from "./routes/adv.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use("/api/survey", surveyRouter);
 app.use("/api/edu", eduRouter);
 app.use("/api/sim", simRouter);
 app.use("/api/assistant", assistantRouter);
+app.use("/api/adv", advRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

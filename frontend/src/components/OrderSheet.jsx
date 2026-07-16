@@ -4,14 +4,18 @@ import { api } from '../api/client'
 const krw = (v) =>
   v == null ? '-' : Math.round(v).toLocaleString('ko-KR') + '원'
 
-// 시세 미니 차트 (최근 48시간, 1시간봉 종가)
-function Sparkline({ symbol }) {
+// 시세 미니 차트 — 라이브: 최근 48시간(1시간봉), 시나리오: 시작~현재 시점 일봉(미래 미노출)
+function Sparkline({ symbol, candleData }) {
   const [points, setPoints] = useState(null)
   useEffect(() => {
+    if (candleData) {
+      setPoints(candleData.map((c) => c.close))
+      return
+    }
     api(`/sim/candles?symbol=${symbol}&unit=60&count=48`)
       .then((cs) => setPoints(cs.map((c) => c.close)))
       .catch(() => setPoints([]))
-  }, [symbol])
+  }, [symbol, candleData])
 
   if (!points) return <div className="sparkline hint">차트 로딩…</div>
   if (points.length === 0) return null
@@ -47,7 +51,15 @@ function Sparkline({ symbol }) {
   )
 }
 
-export default function OrderSheet({ instrument, session, rules, holdings, onClose, onDone }) {
+export default function OrderSheet({
+  instrument,
+  session,
+  rules,
+  holdings,
+  onClose,
+  onDone,
+  candleData = null, // 시나리오 모드: 시작~현재까지의 일봉 (라이브면 null)
+}) {
   const [side, setSide] = useState('BUY')
   const [orderType, setOrderType] = useState('MARKET')
   const [amountKrw, setAmountKrw] = useState('')
@@ -100,7 +112,7 @@ export default function OrderSheet({ instrument, session, rules, holdings, onClo
             닫기
           </button>
         </div>
-        <Sparkline symbol={instrument.symbol} />
+        <Sparkline symbol={instrument.symbol} candleData={candleData} />
 
         <div className="filter-row">
           <button
