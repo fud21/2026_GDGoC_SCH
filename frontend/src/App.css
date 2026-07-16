@@ -510,3 +510,104 @@ button.ghost {
 .term-card.mine {
   border-color: var(--primary);
 }
+
+/* AI 어시스턴트 */
+.nudge-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 0.85rem;
+}
+
+.assistant-fab {
+  position: fixed;
+  right: max(16px, calc(50vw - 224px));
+  bottom: 20px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  z-index: 20;
+  padding: 0;
+}
+
+.assistant-panel {
+  position: fixed;
+  right: max(16px, calc(50vw - 224px));
+  bottom: 84px;
+  width: min(92vw, 360px);
+  height: min(70vh, 480px);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 10px;
+  z-index: 20;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.assistant-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.assistant-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.bubble.bot {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.assistant-input {
+  display: flex;
+  gap: 8px;
+}
+
+.assistant-input input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.assistant-input button {
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}

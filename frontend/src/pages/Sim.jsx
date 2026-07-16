@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useAuth } from '../context/useAuth'
 import OrderSheet from '../components/OrderSheet'
+import AssistantPanel from '../components/AssistantPanel'
 
 const krw = (v) =>
   v == null ? '-' : Math.round(v).toLocaleString('ko-KR') + '원'
@@ -290,6 +291,8 @@ export default function Sim() {
           }}
         />
       )}
+
+      <AssistantPanel sessionId={sessionId} riskType={user?.risk_type} />
 
       <p className="disclaimer">
         본 서비스는 교육 목적의 모의투자이며 실제 투자 권유가 아닙니다.
