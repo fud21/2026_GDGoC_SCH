@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        nav {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        nav form {
+            display: inline;
+        }
+
+        form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        input,
+        select,
+        button {
+            font-size: 16px;
+            padding: 8px;
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .error {
+            margin-top: 20px;
+            color: #c00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="/login.html">Login</a>
+    <a href="/signup.html">Sign up</a>
+    <form method="post" action="/logout">
+        <button type="submit">Logout</button>
+    </form>
+</nav>
+
+<h1>Calculator</h1>
+
+<form id="calculatorForm">
+    <input id="left" type="number" step="any" placeholder="First number">
+    <select id="operator">
+        <option value="add">+</option>
+        <option value="subtract">-</option>
+        <option value="multiply">*</option>
+        <option value="divide">/</option>
+    </select>
+    <input id="right" type="number" step="any" placeholder="Second number">
+    <button type="submit">Calculate</button>
+</form>
+
+<div id="result" class="result"></div>
+<div id="error" class="error"></div>
+
+<script>
+    const form = document.getElementById("calculatorForm");
+    const leftInput = document.getElementById("left");
+    const rightInput = document.getElementById("right");
+    const operatorInput = document.getElementById("operator");
+    const resultBox = document.getElementById("result");
+    const errorBox = document.getElementById("error");
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        resultBox.textContent = "";
+        errorBox.textContent = "";
+
+        const left = Number(leftInput.value);
+        const right = Number(rightInput.value);
+        const operator = operatorInput.value;
+
+        if (leftInput.value === "" || rightInput.value === "") {
+            errorBox.textContent = "Enter both numbers.";
+            return;
+        }
+
+        if (Number.isNaN(left) || Number.isNaN(right)) {
+            errorBox.textContent = "Enter valid numbers.";
+            return;
+        }
+
+        if (operator === "divide" && right === 0) {
+            errorBox.textContent = "Cannot divide by zero.";
+            return;
+        }
+
+        const result = calculate(left, right, operator);
+        resultBox.textContent = "Result: " + formatResult(result);
+    });
+
+    function calculate(left, right, operator) {
+        switch (operator) {
+            case "subtract":
+                return left - right;
+            case "multiply":
+                return left * right;
+            case "divide":
+                return left / right;
+            default:
+                return left + right;
+        }
+    }
+
+    function formatResult(value) {
+        if (Number.isInteger(value)) {
+            return String(value);
+        }
+
+        return Number(value.toFixed(10)).toString();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        form {
+            display: grid;
+            gap: 10px;
+            max-width: 320px;
+        }
+
+        input,
+        button {
+            font-size: 16px;
+            padding: 8px;
+        }
+
+        .error {
+            color: #c00;
+            font-weight: bold;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+<h1>Sign Up</h1>
+
+<div id="error" class="error"></div>
+
+<form method="post" action="/auth/signup">
+    <input type="text" name="username" placeholder="Username" autocomplete="username" required>
+    <input type="password" name="password" placeholder="Password" autocomplete="new-password" required>
+    <button type="submit">Create Account</button>
+</form>
+
+<p>
+    <a href="/login.html">Already have an account?</a>
+</p>
+<p>
+    <a href="/">Back to calculator</a>
+</p>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const error = document.getElementById("error");
+
+    if (params.has("error")) {
+        error.textContent = "Sign up failed. Use a unique username and a password of at least 4 characters.";
+    }
+</script>
+</body>
+</html>

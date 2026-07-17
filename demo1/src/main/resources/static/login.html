@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        form {
+            display: grid;
+            gap: 10px;
+            max-width: 320px;
+        }
+
+        input,
+        button {
+            font-size: 16px;
+            padding: 8px;
+        }
+
+        .message {
+            margin: 16px 0;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #c00;
+        }
+    </style>
+</head>
+<body>
+<h1>Login</h1>
+
+<div id="message" class="message"></div>
+
+<form method="post" action="/login">
+    <input type="text" name="username" placeholder="Username" autocomplete="username" required>
+    <input type="password" name="password" placeholder="Password" autocomplete="current-password" required>
+    <button type="submit">Login</button>
+</form>
+
+<p>
+    <a href="/signup.html">Create an account</a>
+</p>
+<p>
+    <a href="/">Back to calculator</a>
+</p>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const message = document.getElementById("message");
+
+    if (params.has("error")) {
+        message.textContent = "Login failed. Check your username and password.";
+        message.classList.add("error");
+    } else if (params.has("registered")) {
+        message.textContent = "Account created. You can log in now.";
+    }
+</script>
+</body>
+</html>
