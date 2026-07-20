@@ -34,6 +34,16 @@ npm run dev:frontend
 ## 데이터베이스 (Prisma + SQLite)
 
 DB 파일은 `backend/prisma/dev.db` 입니다. 스키마는 `backend/prisma/schema.prisma`에서 관리합니다.
+## 🔄 데이터 흐름도 (Data Flow Diagram)
+
+1. **사용자 요청**: 사용자가 검색할 주소 입력 (Frontend: React, Kakao Map)
+2. **주소-좌표 변환**: Backend(Node.js)에서 요청 수신 후 Kakao API를 통해 위/경도 좌표로 변환
+3. **DB 데이터 조회**: MySQL Database에서 변환된 좌표 기준 안전 시설물(CCTV, 보안등, 파출소) 및 범죄 통계 데이터 조회
+4. **안전 점수 계산**: 
+   - 평가 항목: CCTV 개수, 보안등 개수, 파출소 거리, 범죄 발생 건수
+   - 가중치 적용 (60% / 20% / 20%)
+   - 최종 S~D 등급 산출
+5. **API 응답 및 시각화**: 산출된 안전 점수/등급/시설 정보를 Frontend로 전달하여 히트맵 및 위치 표시
 
 - 스키마 수정 후 마이그레이션: `cd backend && npm run prisma:migrate`
 - Prisma 클라이언트 재생성: `cd backend && npm run prisma:generate`
