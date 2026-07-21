@@ -11,6 +11,10 @@ RIVERSE는 도로·제방·교량·하천 주변 공사와 같은 도시 구조 
 ![RIVERSE 로컬 실행 화면](./public/readme-preview.png)
 
 - 로컬 주소: [http://localhost:3000](http://localhost:3000)
+<<<<<<< HEAD
+=======
+- 발표 설계 문서: [presentation.md](./presentation.md)
+>>>>>>> ee018720a691af6f6b8ca5422770b35a8d56cd31
 
 ## 문제 정의
 
