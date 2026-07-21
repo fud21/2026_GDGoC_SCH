@@ -40,6 +40,10 @@ model SafetyData {
   crimeTheft     Float?
   crimeViolence  Float?
   lampType       String?
+  dongCode       String?
+  dongName       String?
+  sggCode        String?
+  isGwanak       Boolean?
 
   @@unique([dataType, sourceId])
   @@index([dataType])

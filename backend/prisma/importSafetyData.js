@@ -11,6 +11,8 @@ const BATCH_SIZE = 500;
 
 const toFloat = (v) => (v === undefined || v === "" ? null : Number(v));
 const toStr = (v) => (v === undefined || v === "" ? null : v);
+const toBool = (v) =>
+  v === undefined || v === "" ? null : v === "True" || v === "true";
 
 async function main() {
   const raw = fs.readFileSync(CSV_PATH, "utf8").replace(/^﻿/, "");
@@ -35,6 +37,10 @@ async function main() {
     crimeTheft: toFloat(r.crime_theft),
     crimeViolence: toFloat(r.crime_violence),
     lampType: toStr(r.lamp_type),
+    dongCode: toStr(r.dong_code),
+    dongName: toStr(r.dong_name),
+    sggCode: toStr(r.sgg_code),
+    isGwanak: toBool(r.is_gwanak),
   }));
 
   await prisma.safetyData.deleteMany();

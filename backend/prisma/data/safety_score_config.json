@@ -1,0 +1,24 @@
+{
+  "radiusMeters": 300,
+  "weights": {
+    "cctv": 0.6,
+    "lamp": 0.4
+  },
+  "normalization": {
+    "cctv": {
+      "min": 0.0,
+      "max": 50.0
+    },
+    "lamp": {
+      "min": 0.0,
+      "max": 354.0
+    }
+  },
+  "gradeCutoffs": {
+    "D_C": 0.0,
+    "C_B": 5.03,
+    "B_A": 46.88,
+    "A_S": 79.6
+  },
+  "note": "관악구 내부 100m 격자(3,762개 지점) 샘플링으로 산출한 기준값. cctv/lamp count는 반경 300m 내 개수, 5~95 백분위 기준 0~100 정규화."
+}
