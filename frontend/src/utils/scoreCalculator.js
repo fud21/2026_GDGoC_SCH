@@ -1,5 +1,7 @@
 import { getItemsWithinRadius, getNearestItem } from './geoUtils';
 
+// 등급별 기준 점수, 색상, 설명 문구
+// score >= min 을 만족하는 첫 번째 등급으로 결정됨 (S부터 순서대로 검사)
 export const GRADE_CONFIG = {
   S: { min: 80, color: '#3b82f6', bg: '#eff6ff', desc: '매우 안전한 지역입니다' },
   A: { min: 70, color: '#22c55e', bg: '#f0fdf4', desc: '안전한 지역입니다' },
@@ -8,6 +10,7 @@ export const GRADE_CONFIG = {
   D: { min: 0,  color: '#ef4444', bg: '#fef2f2', desc: '안전 시설이 부족한 지역입니다' },
 };
 
+// 점수(0~100)를 받아서 해당하는 등급 정보를 반환
 export function getGrade(score) {
   for (const [grade, cfg] of Object.entries(GRADE_CONFIG)) {
     if (score >= cfg.min) return { grade, ...cfg };
@@ -15,6 +18,8 @@ export function getGrade(score) {
   return { grade: 'D', ...GRADE_CONFIG.D };
 }
 
+// 좌표(lat, lng) 하나와 CSV에서 불러온 전체 데이터(csvData)를 받아
+// 안전 점수와 등급, 항목별 세부 점수를 계산해서 반환하는 핵심 함수
 export function calculateScore(lat, lng, csvData) {
   const { cctv, lamp, police, crime } = csvData;
 
@@ -45,10 +50,12 @@ export function calculateScore(lat, lng, csvData) {
   const totalCrimes = crime ? crime.kill + crime.rob + crime.theft + crime.violence : 0;
   const crimeScore = totalCrimes > 3000 ? -5 : totalCrimes > 1000 ? -3 : 0;
 
+  // 기본 점수 60에서 위 항목들을 더하고 빼서 최종 점수 산출 (0~100으로 clamp)
   const rawScore = 60 + cctvScore + lampScore + policeScore + brightnessScore + crimeScore;
   const totalScore = Math.max(0, Math.min(100, rawScore));
   const gradeInfo = getGrade(totalScore);
 
+  // 화면에 프로그레스 바로 보여줄 항목별 점수/비율 계산
   const securityMax = 3 + 5 + 15;
   const securityScore = cctvScore + lampScore + policeScore;
 

@@ -1,3 +1,5 @@
+// 로고 + 검색창 + (검색 결과에 따라) 분석 버튼 or 안내문
+// 모바일의 지도 위 카드, 데스크탑의 옆 패널 둘 다 이 컴포넌트를 공유해서 씀
 export default function SearchPanelContent({
   searchText,
   setSearchText,
@@ -29,9 +31,11 @@ export default function SearchPanelContent({
         </button>
       </div>
 
+      {/* 검색으로 위치를 찾았으면 분석 버튼을, 아직이면 안내 문구를 보여줌 */}
       {markerPos ? (
         <div className="bottom-panel">
           <p className="found-address">📍 {foundAddress}</p>
+          {/* policeReady: 파출소 좌표 변환이 끝나야 정확한 점수 계산이 가능해서 그 전까진 버튼 비활성화 */}
           <button className="btn-primary" disabled={!policeReady} onClick={onAnalyze}>
             {policeReady ? '이 위치 분석하기' : '데이터 준비 중...'}
           </button>

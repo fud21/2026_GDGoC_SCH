@@ -1,9 +1,11 @@
 import { Map, CustomOverlayMap } from 'react-kakao-maps-sdk';
 import { haversineDistance } from '../utils/geoUtils';
 
+// "보안시설 상세보기" 화면: 미니 지도에 주변 CCTV/보안등/경찰서 위치를 점으로 찍고,
+// 항목별 점수와 가까운 경찰서 목록을 보여줌
 export default function SecurityDetail({ result, location, onBack, panelMode }) {
   const { details } = result;
-  const policeWithCoords = details.police.all.filter(p => p.lat && p.lng);
+  const policeWithCoords = details.police.all.filter(p => p.lat && p.lng); // 좌표 변환이 된 파출소만 지도에 표시
 
   return (
     <div className={panelMode ? 'panel-section' : 'screen screen-scroll'}>
@@ -12,6 +14,7 @@ export default function SecurityDetail({ result, location, onBack, panelMode }) 
         <span className="app-bar-title">보안시설 상세</span>
       </div>
 
+      {/* 내 위치(★) 기준으로 CCTV(파랑)/보안등(노랑)/경찰서(빨강) 점을 지도에 표시 */}
       <div className="mini-map-container">
         <Map
           center={{ lat: location.lat, lng: location.lng }}
@@ -77,6 +80,7 @@ export default function SecurityDetail({ result, location, onBack, panelMode }) 
         )}
         <ScoreChip score={details.police.score} max={15} color="#22c55e" />
 
+        {/* 전체 파출소를 가까운 순으로 정렬해서 목록으로 표시 */}
         <div className="police-list">
           {policeWithCoords
             .map(p => ({
@@ -96,6 +100,7 @@ export default function SecurityDetail({ result, location, onBack, panelMode }) 
   );
 }
 
+// "3점 / 3점 만점" 형태의 작은 배지
 function ScoreChip({ score, max, color }) {
   return (
     <div className="score-chip" style={{ borderColor: color, color }}>
