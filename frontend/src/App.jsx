@@ -9,6 +9,7 @@ import Chapter from './pages/Chapter'
 import Lesson from './pages/Lesson'
 import FinalQuiz from './pages/FinalQuiz'
 import Glossary from './pages/Glossary'
+import Profile from './pages/Profile'
 import Placeholder from './pages/Placeholder'
 import JudgmentHub from './pages/JudgmentHub'
 import JudgmentScenario from './pages/JudgmentScenario'
@@ -96,6 +97,14 @@ function App() {
           element={
             <Protected>
               <Glossary />
+            </Protected>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <Protected>
+              <Profile />
             </Protected>
           }
         />
