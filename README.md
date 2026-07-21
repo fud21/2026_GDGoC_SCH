@@ -6,10 +6,11 @@ RIVERSE는 도로·제방·교량·하천 주변 공사와 같은 도시 구조 
 
 현재 저장소에는 Google Solution Challenge 시연을 위한 풀스택 MVP가 구현되어 있습니다.
 
-## 서비스 링크
+## 로컬 실행 화면
 
-- 비공개 배포: [RIVERSE 도시 수해 디지털 트윈](https://riverse-flood-lab.hearty-perch-7590.chatgpt.site)
-- 발표 설계 문서: [presentation.md](./presentation.md)
+![RIVERSE 로컬 실행 화면](./public/readme-preview.png)
+
+- 로컬 주소: [http://localhost:3000](http://localhost:3000)
 
 ## 문제 정의
 
@@ -126,11 +127,11 @@ flowchart LR
 | 영역 | 기술 | 역할 |
 |---|---|---|
 | 웹 프레임워크 | Next.js, React, TypeScript | 화면과 API 구성 |
-| 빌드·런타임 | vinext, Vite | Cloudflare Worker 호환 빌드 |
+| 빌드·런타임 | Next.js 개발·프로덕션 서버 | 로컬 실행 및 빌드 |
 | 지도 표현 | HTML Canvas 2D | 등각 3D 지형과 침수 애니메이션 렌더링 |
 | 스타일 | CSS, Tailwind CSS 기반 환경 | 반응형 대시보드 UI |
 | 백엔드 | Next.js Route Handler | 입력 검증과 침수 계산 API 제공 |
-| 배포 | Codex Sites | 비공개 프로덕션 배포 |
+| 실행 환경 | Node.js | 로컬 개발·시연 서버 |
 | 테스트 | Node.js Test Runner | 서버 렌더링 및 API 결과 검증 |
 
 ## 프로젝트 구조
@@ -147,8 +148,6 @@ GoogleSolution/
 │  └─ og.png                  # 링크 공유용 소셜 이미지
 ├─ tests/
 │  └─ rendered-html.test.mjs  # 화면 및 API 자동 테스트
-├─ .openai/
-│  └─ hosting.json            # Sites 배포 설정
 ├─ presentation.md            # 아키텍처와 발표 준비 문서
 ├─ package.json
 └─ README.md
@@ -184,7 +183,7 @@ npm run build
 npm test
 ```
 
-- `npm run build`: 배포 가능한 vinext 결과물을 생성합니다.
+- `npm run build`: Next.js 프로덕션 빌드 결과물을 생성합니다.
 - `npm test`: 프로젝트를 빌드한 뒤 메인 화면의 서버 렌더링과 시뮬레이션 API를 검증합니다.
 
 ## 시뮬레이션 API
