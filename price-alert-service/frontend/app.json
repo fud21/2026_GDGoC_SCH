@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "살까?",
+    "slug": "salkka",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Lowest_Price_alert.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/Lowest_Price_alert.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/Lowest_Price_alert.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/Lowest_Price_alert.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ]
+    ]
+  }
+}
