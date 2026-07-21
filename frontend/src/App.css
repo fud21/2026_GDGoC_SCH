@@ -781,3 +781,12 @@ button.ghost {
     grid-template-columns: 1fr;
   }
 }
+
+/* 프로필 */
+.profile-page section {
+  margin-bottom: 24px;
+}
+
+.profile-summary h2 {
+  margin-bottom: 4px;
+}

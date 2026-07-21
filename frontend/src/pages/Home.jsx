@@ -50,6 +50,10 @@ export default function Home() {
           <h2>용어 사전</h2>
           <p>모르는 용어 바로 검색</p>
         </Link>
+        <Link className="menu-card" to="/profile">
+          <h2>내 정보</h2>
+          <p>학습 현황과 판단 훈련 기록 보기</p>
+        </Link>
         {!user?.risk_type && (
           <Link className="menu-card highlight" to="/onboarding/survey">
             <h2>성향 진단</h2>
