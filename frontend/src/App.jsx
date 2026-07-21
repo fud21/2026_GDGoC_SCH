@@ -1,74 +1,116 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useState, useEffect, useRef } from 'react';
+import { loadCSVData } from './utils/csvParser';
+import { calculateScore } from './utils/scoreCalculator';
+import MainMap from './components/MainMap';
+import AnalysisResult from './components/AnalysisResult';
+import SecurityDetail from './components/SecurityDetail';
+import DesktopShell from './components/DesktopShell';
+import './App.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
-
-function App() {
-  const [users, setUsers] = useState([])
-  const [email, setEmail] = useState('')
-  const [name, setName] = useState('')
-  const [error, setError] = useState('')
-
-  const loadUsers = async () => {
-    const res = await fetch(`${API_BASE}/api/users`)
-    const data = await res.json()
-    setUsers(data)
-  }
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => window.matchMedia('(min-width: 768px)').matches
+  );
 
   useEffect(() => {
-    loadUsers().catch(() => setError('백엔드 서버에 연결할 수 없습니다.'))
-  }, [])
+    const mq = window.matchMedia('(min-width: 768px)');
+    const handler = e => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    const res = await fetch(`${API_BASE}/api/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      setError(data.error || '사용자 생성에 실패했습니다.')
-      return
+  return isDesktop;
+}
+
+export default function App() {
+  const [kakaoLoaded, setKakaoLoaded] = useState(false);
+  const [screen, setScreen] = useState('main');
+  const [csvData, setCsvData] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [result, setResult] = useState(null);
+  const [policeReady, setPoliceReady] = useState(false);
+  const geocodingDoneRef = useRef(false);
+  const isDesktop = useIsDesktop();
+
+  useEffect(() => {
+    loadCSVData().then(setCsvData);
+  }, []);
+
+  useEffect(() => {
+    if (!window.kakao) return;
+    window.kakao.maps.load(() => setKakaoLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!kakaoLoaded || !csvData || geocodingDoneRef.current) return;
+    geocodingDoneRef.current = true;
+
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    const promises = csvData.police.map(station =>
+      new Promise(resolve => {
+        if (!station.address) return resolve(station);
+        geocoder.addressSearch(station.address, (res, status) => {
+          if (status === window.kakao.maps.services.Status.OK && res.length > 0) {
+            resolve({ ...station, lat: parseFloat(res[0].y), lng: parseFloat(res[0].x) });
+          } else {
+            resolve(station);
+          }
+        });
+      })
+    );
+
+    Promise.all(promises).then(geocodedPolice => {
+      setCsvData(prev => ({ ...prev, police: geocodedPolice }));
+      setPoliceReady(true);
+    });
+  }, [kakaoLoaded, csvData]);
+
+  const handleAnalyze = (loc) => {
+    setLocation(loc);
+    if (csvData) {
+      setResult(calculateScore(loc.lat, loc.lng, csvData));
+      setScreen('result');
     }
-    setEmail('')
-    setName('')
-    await loadUsers()
+  };
+
+  if (isDesktop) {
+    return (
+      <div className="app-container app-container--desktop">
+        <DesktopShell
+          kakaoLoaded={kakaoLoaded}
+          policeReady={policeReady}
+          screen={screen}
+          result={result}
+          location={location}
+          onAnalyze={handleAnalyze}
+          onDetail={() => setScreen('detail')}
+          onBackToMain={() => setScreen('main')}
+          onBackToResult={() => setScreen('result')}
+        />
+      </div>
+    );
   }
 
   return (
-    <div style={{ maxWidth: 480, margin: '40px auto', fontFamily: 'sans-serif' }}>
-      <h1>Frontend + Backend + DB 연동 확인</h1>
-
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input
-          type="email"
-          placeholder="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+    <div className="app-container">
+      {screen === 'main' && (
+        <MainMap kakaoLoaded={kakaoLoaded} policeReady={policeReady} onAnalyze={handleAnalyze} />
+      )}
+      {screen === 'result' && result && (
+        <AnalysisResult
+          result={result}
+          location={location}
+          onDetail={() => setScreen('detail')}
+          onBack={() => setScreen('main')}
         />
-        <input
-          type="text"
-          placeholder="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+      )}
+      {screen === 'detail' && result && (
+        <SecurityDetail
+          result={result}
+          location={location}
+          onBack={() => setScreen('result')}
         />
-        <button type="submit">추가</button>
-      </form>
-
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <ul>
-        {users.map((u) => (
-          <li key={u.id}>
-            {u.email} {u.name ? `(${u.name})` : ''}
-          </li>
-        ))}
-      </ul>
+      )}
     </div>
-  )
+  );
 }
-
-export default App

@@ -1,184 +1,483 @@
-.counter {
-  font-size: 16px;
-  padding: 5px 10px;
-  border-radius: 5px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 2px solid transparent;
-  transition: border-color 0.3s;
-  margin-bottom: 24px;
-
-  &:hover {
-    border-color: var(--accent-border);
-  }
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-}
-
-.hero {
-  position: relative;
-
-  .base,
-  .framework,
-  .vite {
-    inset-inline: 0;
-    margin: 0 auto;
-  }
-
-  .base {
-    width: 170px;
-    position: relative;
-    z-index: 0;
-  }
-
-  .framework,
-  .vite {
-    position: absolute;
-  }
-
-  .framework {
-    z-index: 1;
-    top: 34px;
-    height: 28px;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
-      scale(1.4);
-  }
-
-  .vite {
-    z-index: 0;
-    top: 107px;
-    height: 26px;
-    width: auto;
-    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
-      scale(0.8);
-  }
-}
-
-#center {
+.app-container {
+  width: 100%;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 25px;
-  place-content: center;
-  place-items: center;
-  flex-grow: 1;
-
-  @media (max-width: 1024px) {
-    padding: 32px 20px 24px;
-    gap: 18px;
-  }
 }
 
-#next-steps {
+/* ── 공통 화면 ── */
+.screen {
   display: flex;
-  border-top: 1px solid var(--border);
-  text-align: left;
-
-  & > div {
-    flex: 1 1 0;
-    padding: 32px;
-    @media (max-width: 1024px) {
-      padding: 24px 20px;
-    }
-  }
-
-  .icon {
-    margin-bottom: 16px;
-    width: 22px;
-    height: 22px;
-  }
-
-  @media (max-width: 1024px) {
-    flex-direction: column;
-    text-align: center;
-  }
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
-#docs {
-  border-right: 1px solid var(--border);
-
-  @media (max-width: 1024px) {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
+.screen-scroll {
+  height: 100vh;
+  overflow-y: auto;
+  padding-bottom: 32px;
 }
 
-#next-steps ul {
-  list-style: none;
-  padding: 0;
+/* ── 앱바 ── */
+.app-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #555;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.back-btn:hover { background: #f5f5f5; }
+
+.app-bar-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* ── 메인 헤더 ── */
+.main-header {
+  padding: 20px 20px 14px;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+
+/* ── 검색바 ── */
+.search-bar {
   display: flex;
   gap: 8px;
-  margin: 32px 0 0;
-
-  .logo {
-    height: 18px;
-  }
-
-  a {
-    color: var(--text-h);
-    font-size: 16px;
-    border-radius: 6px;
-    background: var(--social-bg);
-    display: flex;
-    padding: 6px 12px;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    transition: box-shadow 0.3s;
-
-    &:hover {
-      box-shadow: var(--shadow);
-    }
-    .button-icon {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    margin-top: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-
-    li {
-      flex: 1 1 calc(50% - 8px);
-    }
-
-    a {
-      width: 100%;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-  }
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-#spacer {
-  height: 88px;
-  border-top: 1px solid var(--border);
-  @media (max-width: 1024px) {
-    height: 48px;
-  }
+.search-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-.ticks {
-  position: relative;
+.search-input:focus { border-color: #3b82f6; }
+
+.search-btn {
+  padding: 10px 16px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.search-btn:disabled { background: #93c5fd; }
+
+/* ── 지도 ── */
+.map-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── 모바일: 오버레이 래퍼는 레이아웃에 영향 없이 자식만 원래 순서로 노출 ── */
+.map-overlay {
+  display: contents;
+}
+
+.main-header { order: 1; }
+.search-bar { order: 2; }
+.map-container { order: 3; }
+.bottom-panel,
+.bottom-hint { order: 4; }
+
+/* ── 데스크탑: 여닫는 측면 패널 (구글맵/카카오맵/네이버맵 스타일) ── */
+.desktop-shell {
+  height: 100vh;
   width: 100%;
+  position: relative;
+  overflow: hidden;
+}
 
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4.5px;
-    border: 5px solid transparent;
-  }
+/* 지도는 항상 전체 화면에 고정 — 패널 상태와 무관하게 크기/위치 불변 */
+.desktop-shell .map-container {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  z-index: 0;
+}
 
-  &::before {
-    left: 0;
-    border-left-color: var(--border);
-  }
-  &::after {
-    right: 0;
-    border-right-color: var(--border);
-  }
+.side-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 100%;
+  background: #fff;
+  box-shadow: 2px 0 16px rgba(0,0,0,0.1);
+  z-index: 5;
+  transition: transform 0.25s ease;
+}
+
+.side-panel--closed {
+  transform: translateX(-100%);
+}
+
+.side-panel-inner {
+  width: 400px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.panel-toggle {
+  position: absolute;
+  top: 50%;
+  left: 400px;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #3b82f6;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  color: #fff;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.25s ease, background 0.15s ease;
+}
+
+.panel-toggle:hover {
+  background: #2563eb;
+}
+
+.panel-toggle--closed {
+  left: 0;
+}
+
+.mini-map-container {
+  height: 260px;
+  overflow: hidden;
+}
+
+.map-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 14px;
+}
+
+/* ── 하단 패널 ── */
+.bottom-panel {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+}
+
+.found-address {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bottom-hint {
+  padding: 20px 16px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.hint-sub {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #bbb;
+}
+
+/* ── 버튼 ── */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-primary:hover { background: #2563eb; }
+
+.btn-secondary {
+  width: 100%;
+  padding: 14px;
+  background: #fff;
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-secondary:hover { background: #eff6ff; }
+
+/* ── 주소 칩 ── */
+.address-chip {
+  margin: 14px 16px 0;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 등급 카드 ── */
+.grade-card {
+  margin: 16px 16px 0;
+  padding: 24px;
+  border: 2.5px solid;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.grade-letter {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.grade-score {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin-top: 6px;
+}
+
+.grade-desc {
+  font-size: 13px;
+  color: #666;
+  margin-top: 6px;
+}
+
+/* ── 섹션 ── */
+.section {
+  margin: 16px 16px 0;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 14px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  margin-bottom: 12px;
+}
+
+.section-header .section-title { margin-bottom: 0; }
+
+.section-weight {
+  font-size: 12px;
+  color: #888;
+  background: #e5e7eb;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+/* ── 디테일 행 ── */
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.detail-icon { font-size: 18px; flex-shrink: 0; }
+
+.detail-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+.detail-value {
+  font-size: 12px;
+  color: #888;
+}
+
+.detail-score {
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── 프로그레스바 ── */
+.progress-bg {
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+/* ── 액션 버튼 ── */
+.action-buttons {
+  padding: 16px;
+  margin-top: 8px;
+}
+
+/* ── 범례 ── */
+.legend {
+  display: flex;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #555;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ── 지도 마커 ── */
+.map-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,0.2);
+}
+
+.map-dot-star {
+  font-size: 20px;
+  color: #8b5cf6;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transform: translateY(-4px);
+  display: block;
+}
+
+/* ── 점수 칩 ── */
+.score-chip {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 5px 14px;
+  border: 1.5px solid;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── 통계 행 ── */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.stat-row strong { color: #111; }
+
+/* ── 경찰서 목록 ── */
+.police-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.police-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #444;
+}
+
+.police-dist {
+  color: #888;
+  font-size: 12px;
 }
