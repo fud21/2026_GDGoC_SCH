@@ -13,7 +13,7 @@ async function getFacilities() {
   facilitiesCache = await prisma.safetyData.findMany({
     where: {
       isGwanak: true,
-      dataType: { in: ["cctv", "보안등"] },
+      dataType: { in: ["cctv", "보안등", "파출소"] },
       lat: { not: null },
       lng: { not: null },
     },
@@ -55,11 +55,12 @@ async function getSafetyScore(req, res) {
         radiusMeters: result.radiusMeters,
         cctvCount: result.cctvCount,
         lampCount: result.lampCount,
+        policeDistanceMeters: result.policeDistance,
       },
       meta: {
-        phase: 1,
+        phase: 2,
         method: "radius",
-        note: "입력 좌표 반경 300m 내 CCTV/보안등 밀집도 기준 점수입니다. 파출소·범죄 데이터는 추후 반영 예정입니다.",
+        note: "입력 좌표 반경 300m 내 CCTV/보안등 밀집도 및 최근접 파출소 거리 기준 점수입니다. 파출소 거리 정규화 기준은 격자 샘플링 전 임시값이며, 범죄 데이터는 추후 반영 예정입니다.",
       },
     });
   } catch (err) {

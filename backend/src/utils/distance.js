@@ -10,4 +10,15 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-module.exports = { distanceMeters };
+// 여러 시설 중 가장 가까운 거리(m) 반환. facilities가 비어있으면 null.
+function nearestDistanceMeters(lat, lng, facilities, dataType) {
+  let min = null;
+  for (const f of facilities) {
+    if (f.dataType !== dataType) continue;
+    const d = distanceMeters(lat, lng, f.lat, f.lng);
+    if (min === null || d < min) min = d;
+  }
+  return min;
+}
+
+module.exports = { distanceMeters, nearestDistanceMeters };

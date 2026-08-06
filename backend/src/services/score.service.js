@@ -4,7 +4,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { distanceMeters } = require("../utils/distance");
+const { distanceMeters, nearestDistanceMeters } = require("../utils/distance");
 
 const config = JSON.parse(
   fs.readFileSync(
@@ -29,6 +29,13 @@ function normalize(value, min, max) {
   return Math.max(0, Math.min(100, score));
 }
 
+// 거리 기반 정규화 (가까울수록 높은 점수, 개수 정규화와 반대 방향)
+function normalizeDistance(distance, minGood, maxBad) {
+  if (distance === null) return 0; // 파출소 데이터 자체가 없는 경우
+  const score = ((maxBad - distance) / (maxBad - minGood)) * 100;
+  return Math.max(0, Math.min(100, score));
+}
+
 // ── 점수 -> 등급 ─────────────────────────────────────────────────
 function scoreToGrade(score) {
   const c = config.gradeCutoffs;
@@ -46,6 +53,7 @@ function computeSafetyScore(lat, lng, facilities) {
 
   const cctvCount = countWithinRadius(lat, lng, facilities, "cctv", radius);
   const lampCount = countWithinRadius(lat, lng, facilities, "보안등", radius);
+  const policeDistance = nearestDistanceMeters(lat, lng, facilities, "파출소");
 
   const cctvScore = normalize(
     cctvCount,
@@ -57,20 +65,29 @@ function computeSafetyScore(lat, lng, facilities) {
     config.normalization.lamp.min,
     config.normalization.lamp.max
   );
+  const policeScore = normalizeDistance(
+    policeDistance,
+    config.normalization.police.minDistance,
+    config.normalization.police.maxDistance
+  );
 
   const safetyScore =
-    cctvScore * config.weights.cctv + lampScore * config.weights.lamp;
+    cctvScore * config.weights.cctv +
+    lampScore * config.weights.lamp +
+    policeScore * config.weights.police;
   const grade = scoreToGrade(safetyScore);
 
   return {
     radiusMeters: radius,
     cctvCount,
     lampCount,
+    policeDistance: policeDistance !== null ? Math.round(policeDistance) : null,
     cctvScore: Math.round(cctvScore * 10) / 10,
     lampScore: Math.round(lampScore * 10) / 10,
+    policeScore: Math.round(policeScore * 10) / 10,
     safetyScore: Math.round(safetyScore * 10) / 10,
     grade,
   };
 }
 
-module.exports = { countWithinRadius, normalize, scoreToGrade, computeSafetyScore };
+module.exports = { countWithinRadius, normalize, normalizeDistance, scoreToGrade, computeSafetyScore };

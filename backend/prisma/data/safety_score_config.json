@@ -1,8 +1,9 @@
 {
   "radiusMeters": 300,
   "weights": {
-    "cctv": 0.6,
-    "lamp": 0.4
+    "cctv": 0.5,
+    "lamp": 0.3,
+    "police": 0.2
   },
   "normalization": {
     "cctv": {
@@ -12,6 +13,10 @@
     "lamp": {
       "min": 0.0,
       "max": 354.0
+    },
+    "police": {
+      "minDistance": 200.0,
+      "maxDistance": 2000.0
     }
   },
   "gradeCutoffs": {
@@ -20,5 +25,5 @@
     "B_A": 46.88,
     "A_S": 79.6
   },
-  "note": "관악구 내부 100m 격자(3,762개 지점) 샘플링으로 산출한 기준값. cctv/lamp count는 반경 300m 내 개수, 5~95 백분위 기준 0~100 정규화."
+  "note": "관악구 내부 100m 격자(3,762개 지점) 샘플링으로 산출한 기준값. cctv/lamp count는 반경 300m 내 개수, 5~95 백분위 기준 0~100 정규화. police는 최근접 파출소까지 거리(m) 기준이며, 격자 샘플링 미실시로 임시값(200~2000m) 사용 중 — 재보정 필요."
 }

@@ -110,36 +110,36 @@ DB 파일은 `backend/prisma/dev.db` 입니다. 스키마는 `backend/prisma/sch
 
 ### `GET /api/safety-score?address=...`
 
-주소를 입력하면 그 지점의 실시간 안전점수/등급을 계산해 주는 핵심 API (Phase 1, 반경 기반). "이 주소 근처가 얼마나 안전한가"를 CCTV·보안등 밀집도로 정량화하는 역할을 한다.
+주소를 입력하면 그 지점의 실시간 안전점수/등급을 계산해 주는 핵심 API (Phase 2, 반경 기반). "이 주소 근처가 얼마나 안전한가"를 CCTV·보안등 밀집도 및 파출소 근접도로 정량화하는 역할을 한다.
 
 내부 처리 흐름:
 
 1. **지오코딩**: `address`를 Kakao 주소 검색 API로 위/경도 좌표로 변환한다.
 2. **범위 판별**: 변환된 좌표가 관악구 21개 동 경계(`gwanak_dong_boundary.geojson`) 안에 있는지 turf.js의 point-in-polygon으로 확인한다. 범위 밖이면 422로 응답하고 계산을 진행하지 않는다.
-3. **시설 카운트**: 관악구 내(`isGwanak=true`) CCTV/보안등 데이터를 서버가 메모리에 캐싱해두고(요청마다 DB 왕복하지 않기 위함), 입력 좌표 기준 반경 300m 안에 있는 CCTV 개수와 보안등 개수를 실시간으로 센다.
-4. **정규화**: 센 개수를 `safety_score_config.json`에 저장된 min/max 기준(관악구 100m 격자 샘플링으로 산출)으로 0~100점으로 클리핑 정규화한다.
-5. **가중합 및 등급화**: CCTV 점수 60% + 보안등 점수 40%로 최종 점수를 합산하고, `gradeCutoffs` 기준값과 비교해 S~D 5등급 중 하나를 매긴다.
+3. **시설 카운트**: 관악구 내(`isGwanak=true`) CCTV/보안등/파출소 데이터를 서버가 메모리에 캐싱해두고(요청마다 DB 왕복하지 않기 위함), 입력 좌표 기준 반경 300m 안에 있는 CCTV 개수와 보안등 개수, 그리고 가장 가까운 파출소까지의 거리를 실시간으로 계산한다.
+4. **정규화**: CCTV/보안등 개수는 `safety_score_config.json`에 저장된 min/max 기준(관악구 100m 격자 샘플링으로 산출)으로 0~100점으로 클리핑 정규화하고, 파출소는 거리가 가까울수록 높은 점수가 되도록 반대 방향으로 정규화한다 (현재 200~2000m 임시 기준, 격자 재보정 예정).
+5. **가중합 및 등급화**: CCTV 점수 50% + 보안등 점수 30% + 파출소 점수 20%로 최종 점수를 합산하고, `gradeCutoffs` 기준값과 비교해 S~D 5등급 중 하나를 매긴다.
 
 - 쿼리: `address` (필수)
 - 응답 예시:
-  ```json
+```json
   {
     "address": "서울특별시 관악구 신림동 ...",
-    "lat": 37.48,
-    "lng": 126.93,
+    "lat": 37.489,
+    "lng": 126.926,
     "grade": "A",
-    "score": 70.7,
-    "details": { "radiusMeters": 300, "cctvCount": 12, "lampCount": 45 },
-    "meta": { "phase": 1, "method": "radius", "note": "..." }
+    "score": 72,
+    "details": { "radiusMeters": 300, "cctvCount": 34, "lampCount": 293, "policeDistanceMeters": 817 },
+    "meta": { "phase": 2, "method": "radius", "note": "..." }
   }
-  ```
+```
 - 에러 응답
   - `400` — `address` 쿼리 누락
   - `404` — Kakao 지오코딩 결과 없음 (존재하지 않는 주소)
   - `422` — 좌표는 나왔지만 관악구 범위 밖인 주소
   - `500` — 그 외 서버 오류
 - 관련 코드: `backend/src/routes/safety.routes.js`(지오코딩·범위 판별·라우트 등록), `backend/src/controllers/safety.controller.js`(요청 처리), `backend/src/services/score.service.js`(카운트·정규화·등급 계산), `backend/src/utils/distance.js`(거리 계산)
-- `KAKAO_API_KEY` 설정 및 DB 마이그레이션/데이터 임포트까지 완료 후 실제 호출 테스트 완료 (예: `address=서울시 관악구 신림동` → grade A, score 73.9)
+- `KAKAO_API_KEY` 설정 및 DB 마이그레이션/데이터 임포트까지 완료 후 실제 호출 테스트 완료 (예: `address=서울시 관악구 신림동` → grade A, score 72, Phase 2 반영 후 기준)
 
 ## 관악구 안전데이터 (CSV 임포트)
 
@@ -211,13 +211,22 @@ cd backend && npm run import:safety-data
   - `backend/prisma/data/gwanak_dong_boundary.geojson` — 관악구 21개 동 경계 (범위 판별용)
   - `backend/prisma/data/safety_score_config.json` — 반경/가중치/정규화 기준값/등급 컷오프
 
-### 다음에 이어서 할 수 있는 것
+### 5. 파출소 지오코딩 및 Phase 2 점수 계산 반영
+
+- 파출소 데이터는 원본 CSV에 위경도가 없어 Phase 1 계산에는 반영되지 않았음 → `backend/prisma/geocodePoliceStations.js` 스크립트로 파출소 9건의 주소를 Kakao API로 지오코딩하고, 관악구 동 경계와 대조해 `dongCode`/`dongName`/`isGwanak` 매핑 완료 (9건 전부 관악구 내부 확인)
+- 안전점수 계산 로직에 파출소 항목 추가 (Phase 2)
+  - 반경 내 "개수"가 아니라 입력 좌표에서 **가장 가까운 파출소까지의 거리**를 기준으로 계산 (`backend/src/utils/distance.js`의 `nearestDistanceMeters`)
+  - 거리가 가까울수록 높은 점수가 되도록 반대 방향으로 정규화 (`backend/src/services/score.service.js`의 `normalizeDistance`)
+  - 가중치를 CCTV 60% / 보안등 40%에서 **CCTV 50% / 보안등 30% / 파출소 20%**로 재조정 (팀 논의로 최종 확정 필요)
+  - 파출소 거리 정규화 기준(현재 200~2000m)은 격자 샘플링 없이 임시로 설정한 값 — 아래 "격자 정규화 재보정" 작업 때 함께 재산출 필요
+- API 응답의 `meta.phase`가 1 → 2로 변경, `details`에 `policeDistanceMeters` 추가
+  - 예시: `address=서울시 관악구 신림동` → `grade: A`, `score: 72`, `policeDistanceMeters: 817`
 
 ### 다음에 이어서 할 수 있는 것
 
 - [완료] 지도에 위경도 시각화 관련 기반 데이터(동 경계 geojson) 준비됨 — 실제 지도 렌더링은 프론트 작업 필요
 - [완료] `axios`/`@turf/turf` 설치, `app.js` 라우트 등록, `KAKAO_API_KEY` 설정 및 실제 API 호출 테스트 완료
-- 파출소 9건 좌표 지오코딩(Kakao API) 후 Phase 2 반영 준비
+- [완료] 파출소 9건 좌표 지오코딩 및 Phase 2 점수 계산 반영 (위 5번 참고)
 - 범죄 데이터 반영 방식 결정 (생활안전지도 API는 WMS 이미지 형식이라 동 단위 수치화가 까다로움 — 팀 논의 필요)
-- 격자 정규화 재보정 검토 (현재 하위 20% 구간 점수가 0으로 몰리는 현상 있음, 필요시 샘플링 범위를 주거지역으로 조정)
+- 격자 정규화 재보정 검토 (CCTV/보안등: 현재 하위 20% 구간 점수가 0으로 몰리는 현상 있음. 파출소: 현재 임시값(200~2000m)으로 되어 있어 실제 격자 샘플링으로 기준값 재산출 필요. 필요시 샘플링 범위를 주거지역으로 조정)
 - 사용자 인증
