@@ -31,6 +31,40 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
+## 백엔드 초기 세팅 (안전점수 API 사용을 위한 필수 작업)
+
+`npm run install:all` 이후, 안전점수 API(`/api/safety-score`)를 실제로 호출하려면 아래 작업이 추가로 필요합니다 (팀원 각자 진행).
+
+1. **카카오 API 키 발급**
+   - https://developers.kakao.com 접속 → 개인 계정으로 로그인
+   - [앱] > [애플리케이션 추가하기]로 앱 생성 (카테고리: 지도)
+   - 생성한 앱 > [앱] > [앱 키]에서 REST API 키 복사
+   - [제품 설정] > [카카오맵] > 사용 설정 ON
+
+2. **`.env` 설정**
+   `backend/.env` 파일 생성 후:
+```
+   KAKAO_API_KEY=발급받은_REST_API_키
+   DATABASE_URL="file:./dev.db"
+```
+
+3. **DB 마이그레이션**
+```
+   cd backend
+   npx prisma migrate dev
+```
+
+4. **안전 데이터 임포트**
+```
+   npm run import:safety-data
+```
+
+5. **서버 실행 후 테스트**
+```
+   npm run dev
+```
+   `http://localhost:4000/api/safety-score?address=서울시 관악구 신림동` 호출해서 정상 응답 확인
+
 ## 데이터베이스 (Prisma + SQLite)
 
 DB 파일은 `backend/prisma/dev.db` 입니다. 스키마는 `backend/prisma/schema.prisma`에서 관리합니다.
@@ -105,7 +139,7 @@ DB 파일은 `backend/prisma/dev.db` 입니다. 스키마는 `backend/prisma/sch
   - `422` — 좌표는 나왔지만 관악구 범위 밖인 주소
   - `500` — 그 외 서버 오류
 - 관련 코드: `backend/src/routes/safety.routes.js`(지오코딩·범위 판별·라우트 등록), `backend/src/controllers/safety.controller.js`(요청 처리), `backend/src/services/score.service.js`(카운트·정규화·등급 계산), `backend/src/utils/distance.js`(거리 계산)
-- 주의: 아직 `axios`/`@turf/turf` 미설치 및 `app.js` 라우트 미등록, `KAKAO_API_KEY` 미설정 상태라 실제 호출은 안 된다 (자세한 내용은 "진행 상황" 4번, "다음에 이어서 할 수 있는 것" 참고)
+- `KAKAO_API_KEY` 설정 및 DB 마이그레이션/데이터 임포트까지 완료 후 실제 호출 테스트 완료 (예: `address=서울시 관악구 신림동` → grade A, score 73.9)
 
 ## 관악구 안전데이터 (CSV 임포트)
 
@@ -179,9 +213,10 @@ cd backend && npm run import:safety-data
 
 ### 다음에 이어서 할 수 있는 것
 
+### 다음에 이어서 할 수 있는 것
+
 - [완료] 지도에 위경도 시각화 관련 기반 데이터(동 경계 geojson) 준비됨 — 실제 지도 렌더링은 프론트 작업 필요
-- `npm install axios @turf/turf` 설치 및 `app.js`에 `/api/safety-score` 라우트 등록
-- `.env`에 `KAKAO_API_KEY` 값 채우기
+- [완료] `axios`/`@turf/turf` 설치, `app.js` 라우트 등록, `KAKAO_API_KEY` 설정 및 실제 API 호출 테스트 완료
 - 파출소 9건 좌표 지오코딩(Kakao API) 후 Phase 2 반영 준비
 - 범죄 데이터 반영 방식 결정 (생활안전지도 API는 WMS 이미지 형식이라 동 단위 수치화가 까다로움 — 팀 논의 필요)
 - 격자 정규화 재보정 검토 (현재 하위 20% 구간 점수가 0으로 몰리는 현상 있음, 필요시 샘플링 범위를 주거지역으로 조정)
