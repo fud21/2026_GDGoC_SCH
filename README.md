@@ -222,11 +222,28 @@ cd backend && npm run import:safety-data
 - API 응답의 `meta.phase`가 1 → 2로 변경, `details`에 `policeDistanceMeters` 추가
   - 예시: `address=서울시 관악구 신림동` → `grade: A`, `score: 72`, `policeDistanceMeters: 817`
 
+### 6. 프론트엔드 디자인 프로토타입 기반 재작성
+
+- 디자인팀이 전달한 정적 프로토타입(`index.html`)을 기준으로 프론트엔드를 전면 재작성. 레이아웃·컴포넌트 구조·폰트·간격은 그대로 따르고, 색상 체계만 초록 계열(`--primary: #2ECC71`)로 교체
+- `frontend/src/styles/variables.css`(디자인 토큰)와 `frontend/src/styles/global.css`(온보딩·메인 화면 공통 스타일)로 분리
+- 온보딩 2단계 구현
+  - `components/Onboarding/StepProfile.jsx` — 이름/나이/성별 입력
+  - `components/Onboarding/StepAddress.jsx` — 주소 입력 + 동 이름 자동완성(프로토타입의 `DONG_LIST` 그대로 사용)
+- 메인 화면(사이드바 + 지도) 구현
+  - `components/Main/MainLayout.jsx` — topbar + 사이드바 + 지도 레이아웃
+  - `SearchPanel.jsx`(검색바/홈카드/최근검색), `ResultPanel.jsx`(등급 링 차트 애니메이션 + 지표 4칸), `DetailPanel.jsx`(필터 칩 + 주변 시설 목록)
+  - `MapView.jsx` — Kakao 대신 **Leaflet + OpenStreetMap**으로 구현(프로토타입과 동일한 방식). 등급 원형 오버레이, 시설 마커, 필터 칩에 따른 마커 토글까지 동작 확인
+- 안전 점수는 아직 백엔드 API가 아니라 `utils/mockSafety.js`(주소 문자열을 시드로 한 결정적 목업 데이터)를 사용 — 실제 데이터 아님, 나중에 `api/safetyApi.js` 호출로 교체할 예정이라 의도적으로 분리해둠
+- 기존에 프론트에서 CSV를 직접 읽어 점수를 계산하던 로직(`csvParser.js`, `scoreCalculator.js`, `geoUtils.js`, `public/data.csv`)과 반응형 데스크탑/모바일 분기 컴포넌트(`DesktopShell`, `MainMap`, `SidePanel`, `SearchPanelContent`, `useLocationSearch`)는 전부 제거
+
 ### 다음에 이어서 할 수 있는 것
 
-- [완료] 지도에 위경도 시각화 관련 기반 데이터(동 경계 geojson) 준비됨 — 실제 지도 렌더링은 프론트 작업 필요
+- [완료] 지도에 위경도 시각화 — Leaflet + OpenStreetMap 기반 메인 화면 구현 완료 (단, 안전점수는 아직 `mockSafety.js` 목업 데이터 기준이며 백엔드 연동 전)
 - [완료] `axios`/`@turf/turf` 설치, `app.js` 라우트 등록, `KAKAO_API_KEY` 설정 및 실제 API 호출 테스트 완료
 - [완료] 파출소 9건 좌표 지오코딩 및 Phase 2 점수 계산 반영 (위 5번 참고)
+- `mockSafety.js` 목업을 백엔드 `/api/safety-score` 실제 호출(`api/safetyApi.js`)로 교체 — 백엔드 응답엔 개별 시설 좌표·범죄·조명 데이터가 없어 지도 마커/상세 목록 표시 방식을 같이 재검토해야 함
+- 지도를 Kakao Map으로 전환할지 결정 (현재는 임시로 Leaflet/OSM 사용 중, `index.html`엔 카카오맵 SDK 스크립트가 이미 남아있음)
+- 온보딩에서 받은 사용자 정보(이름/나이/성별)를 실제 맞춤형 안전 정보 로직에 반영할지 검토 (현재는 아바타 이니셜 표시 용도로만 쓰임)
 - 범죄 데이터 반영 방식 결정 (생활안전지도 API는 WMS 이미지 형식이라 동 단위 수치화가 까다로움 — 팀 논의 필요)
 - 격자 정규화 재보정 검토 (CCTV/보안등: 현재 하위 20% 구간 점수가 0으로 몰리는 현상 있음. 파출소: 현재 임시값(200~2000m)으로 되어 있어 실제 격자 샘플링으로 기준값 재산출 필요. 필요시 샘플링 범위를 주거지역으로 조정)
 - 사용자 인증
