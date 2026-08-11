@@ -1,0 +1,28 @@
+/* 디자인 프로토타입(index.html)에서 추출한 토큰. 파란색 계열을 초록색 계열로 교체함 */
+:root {
+  --bg: #ffffff;
+  --bg-soft: #F5F7FA;
+  --bg-soft2: #EEF1F5;
+  --text: #191F28;
+  --text-sub: #8B95A1;
+  --text-sub2: #6B7684;
+  --border: #E5E8EB;
+
+  --primary: #2ECC71;
+  --primary-soft: #E8F8F0;
+  --primary-dark: #27AE60;
+
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  /* 등급 색상은 프로토타입 그대로 유지 */
+  --s: #1CC88A;
+  --a: #6FCF57;
+  --b: #F2C94C;
+  --c: #F2994A;
+  --d: #EB5757;
+
+  --shadow-card: 0 2px 10px rgba(25, 31, 40, 0.06);
+  --shadow-pop: 0 12px 32px rgba(25, 31, 40, 0.14);
+}
