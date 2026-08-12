@@ -30,17 +30,24 @@ export default function DetailPanel({ result, onBack, activeFilters, onToggleFil
       </div>
 
       <div className="section-label">주변 시설 (가까운 순)</div>
-      <div>
-        {result.facilities.map((f, i) => (
-          <div key={i} className="facility-item">
-            <div className="ico" style={{ background: TYPE_META[f.type].color }}>{TYPE_META[f.type].glyph}</div>
-            <div style={{ flex: 1 }}>
-              <div className="name">{f.name}</div>
-              <div className="dist">{f.dist}m</div>
+      {result.facilities.length > 0 ? (
+        <div>
+          {result.facilities.map((f, i) => (
+            <div key={i} className="facility-item">
+              <div className="ico" style={{ background: TYPE_META[f.type].color }}>{TYPE_META[f.type].glyph}</div>
+              <div style={{ flex: 1 }}>
+                <div className="name">{f.name}</div>
+                <div className="dist">{f.dist}m</div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-hint">
+          <div className="big">🚧</div>
+          상세 시설 위치 데이터는 추후 업데이트 예정입니다
+        </div>
+      )}
 
       <div className="note-box">지도 마커는 서비스 소개를 위한 예시 위치이며, 실제 CCTV·보안등·파출소 데이터가 아닙니다.</div>
     </div>

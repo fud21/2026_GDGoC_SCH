@@ -1,14 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4001';
 
-// 등급별 색상/설명 — 백엔드는 등급 문자(S~D)만 내려주므로 화면 표시용 스타일은 프론트에서 매핑
-export const GRADE_STYLE = {
-  S: { color: '#3b82f6', bg: '#eff6ff', desc: '매우 안전한 지역입니다' },
-  A: { color: '#22c55e', bg: '#f0fdf4', desc: '안전한 지역입니다' },
-  B: { color: '#eab308', bg: '#fefce8', desc: '보통 수준의 안전 지역입니다' },
-  C: { color: '#f97316', bg: '#fff7ed', desc: '다소 주의가 필요한 지역입니다' },
-  D: { color: '#ef4444', bg: '#fef2f2', desc: '안전 시설이 부족한 지역입니다' },
-};
-
 // GET /api/safety-score?address=... 호출
 // 실패 시(400/404/422/500) 백엔드가 내려준 error 메시지를 담은 Error를 던짐 (status 프로퍼티 포함)
 export async function fetchSafetyScore(address) {
@@ -25,28 +16,24 @@ export async function fetchSafetyScore(address) {
   return data;
 }
 
-// 백엔드 응답(fetchSafetyScore의 반환값)을 AnalysisResult/SecurityDetail 컴포넌트가 쓰는 형태로 변환
+// 백엔드 응답(fetchSafetyScore의 반환값)을 mockSafety.computeSafety()와 같은 형태로 변환.
+// ResultPanel/DetailPanel/MapView가 이 형태({ addr, latlng, score, grade, cctv, light, police, traffic, facilities })를
+// 기대하므로, mock 모드와 실제 API 모드를 컴포넌트 입장에서 동일하게 다룰 수 있다.
 //
-// 주의: 백엔드는 반경 내 "개수"(cctvCount/lampCount)와 파출소까지의 "거리"만 내려주고,
-// 예전에 프론트가 CSV를 직접 읽어 계산할 때 쓰던 개별 시설 좌표 목록, 가장 가까운 파출소 이름,
-// 환경조명(밝기)·범죄통계 점수는 이 API에 없다. 없는 값은 지어내지 않고 빈 배열/null로 둔다.
+// 주의: 백엔드는 개별 시설 좌표 목록과 환경조명(밝기)·범죄통계·야간 통행량을 내려주지 않는다.
+// 없는 값은 지어내지 않고 traffic만 임시 고정값("보통")을 쓰고, facilities는 빈 배열로 둔다.
 export function toAnalysisResult(apiResponse) {
-  const { grade, score, details } = apiResponse;
-  const style = GRADE_STYLE[grade] || GRADE_STYLE.D;
+  const { address, lat, lng, grade, score, details } = apiResponse;
 
   return {
-    totalScore: score,
+    addr: address,
+    latlng: [lat, lng],
+    score,
     grade,
-    ...style,
-    details: {
-      radiusMeters: details.radiusMeters,
-      cctv: { count: details.cctvCount, nearby: [] },
-      lamp: { count: details.lampCount, nearby: [] },
-      police: {
-        distance: details.policeDistanceMeters ?? null,
-        nearest: null,
-        all: [],
-      },
-    },
+    cctv: details.cctvCount,
+    light: details.lampCount,
+    police: details.policeDistanceMeters,
+    traffic: '보통', // API에 없는 필드 — 임시 고정값
+    facilities: [], // API가 개별 시설 좌표를 내려주지 않음
   };
 }

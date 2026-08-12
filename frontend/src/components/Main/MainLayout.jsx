@@ -14,6 +14,7 @@ export default function MainLayout({
   screen,
   currentResult,
   recents,
+  analyzing,
   onSearch,
   onShowDetail,
   onBackToResult,
@@ -43,7 +44,12 @@ export default function MainLayout({
       <div className="main-body">
         <div className="sidebar">
           {screen === 'main' && (
-            <SearchPanel homeAddress={homeAddress} recents={recents} onSearch={onSearch} />
+            <SearchPanel
+              homeAddress={homeAddress}
+              recents={recents}
+              analyzing={analyzing}
+              onSearch={onSearch}
+            />
           )}
           {screen === 'result' && currentResult && (
             <ResultPanel result={currentResult} onBack={onBackToSearch} onDetail={onShowDetail} />

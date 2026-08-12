@@ -12,8 +12,7 @@
   "dependencies": {
     "leaflet": "^1.9.4",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-kakao-maps-sdk": "^1.2.1"
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",

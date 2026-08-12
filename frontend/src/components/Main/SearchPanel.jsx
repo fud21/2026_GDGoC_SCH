@@ -2,14 +2,25 @@ import { useState } from 'react';
 import { GRADE_COLOR } from '../../utils/mockSafety';
 
 // 사이드바 - 검색 대기 상태: 검색바 + 내 동네 홈카드 + 최근 검색 목록
-export default function SearchPanel({ homeAddress, recents, onSearch }) {
+export default function SearchPanel({ homeAddress, recents, analyzing, onSearch }) {
   const [searchText, setSearchText] = useState('');
 
   const handleGo = () => {
+    if (analyzing) return;
     const trimmed = searchText.trim();
     if (!trimmed) return;
     onSearch(`서울 관악구 ${trimmed.replace('서울 관악구', '').trim()}`);
     setSearchText('');
+  };
+
+  const handleHomeCardClick = () => {
+    if (analyzing || !homeAddress) return;
+    onSearch(homeAddress);
+  };
+
+  const handleRecentClick = (addr) => {
+    if (analyzing) return;
+    onSearch(addr);
   };
 
   return (
@@ -23,18 +34,26 @@ export default function SearchPanel({ homeAddress, recents, onSearch }) {
           placeholder="확인하고 싶은 주소를 검색하세요"
           autoComplete="off"
           value={searchText}
+          disabled={analyzing}
           onChange={(e) => setSearchText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleGo()}
         />
-        <button className="search-go" onClick={handleGo}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+        <button
+          className="search-go"
+          onClick={handleGo}
+          disabled={analyzing}
+          style={analyzing ? { width: 'auto', borderRadius: 999, padding: '0 14px', fontSize: 12, fontWeight: 700 } : undefined}
+        >
+          {analyzing ? '분석 중...' : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M5 12h14M13 6l6 6-6 6" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
         </button>
       </div>
 
       <div className="section-label">내 동네</div>
-      <div className="home-card" onClick={() => homeAddress && onSearch(homeAddress)}>
+      <div className="home-card" onClick={handleHomeCardClick}>
         <div className="ico">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
             <path d="M3 11l9-7 9 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -50,7 +69,7 @@ export default function SearchPanel({ homeAddress, recents, onSearch }) {
       <div className="section-label">최근 검색</div>
       {recents.length > 0 ? (
         recents.slice(0, 6).map((r, i) => (
-          <div key={`${r.addr}-${i}`} className="recent-item" onClick={() => onSearch(r.addr)}>
+          <div key={`${r.addr}-${i}`} className="recent-item" onClick={() => handleRecentClick(r.addr)}>
             <div className="ico">📍</div>
             <div style={{ flex: 1 }}>
               <div className="addr">{r.addr}</div>

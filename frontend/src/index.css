@@ -6,23 +6,10 @@
 
 body {
   font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  background: #e5e7eb;
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
 }
 
 #root {
   width: 100%;
-  max-width: 430px;
   min-height: 100vh;
-  background: #fff;
-}
-
-@media (min-width: 768px) {
-  #root:has(.app-container--desktop) {
-    max-width: none;
-    width: 100vw;
-  }
 }
