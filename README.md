@@ -1,13 +1,79 @@
-# 2026_GDGoC_SCH
+# 2026_GDGoC_SCH — 관악 안심지도
 
-솔루션 챌린지 프로젝트 Repository입니다.
+주소 하나로 우리 동네의 CCTV·보안등·파출소 밀집도를 확인하고, 실시간 안전등급(S~D)을 받아보는 1인 가구를 위한 관악구 안심 주거 서비스입니다.
 
-## 프로젝트 구조
+## 📌 프로젝트 소개
 
-- `frontend/` : React (Vite)
-- `backend/` : Node.js (Express) + Prisma ORM + SQLite
+- **문제**: 1인 가구가 이사·자취를 결정할 때, 그 동네가 실제로 밤에 안전한지 판단할 객관적인 정보가 부족합니다. 막연한 후기나 감에 의존하게 됩니다.
+- **해결 방법**: 관악구 공공데이터(CCTV, 보안등, 파출소 위치)를 기반으로, 검색한 주소 반경 300m 내 안전 인프라 밀집도를 서버에서 실시간 계산해 S~D 등급으로 정량화해 보여줍니다. 같은 동 안에서도 위치마다 다른 점수가 나옵니다.
+- **주요 기능**: 아래 참고
 
-## 실행 방법
+## ✨ 주요 기능
+
+- 주소 검색 기반 실시간 안전점수·등급(S~D) 계산
+- 반경 300m 내 CCTV·보안등 개수, 최근접 파출소 거리 분석
+- Leaflet 지도 시각화 — 등급 원형 오버레이, 주변 시설 마커, 시설 타입별 필터
+- 온보딩(이름·나이·성별, 거주 동 등록) 및 최근 검색 기록(최대 6건)
+- 백엔드 미연결 시 데모(mock) 데이터로 자동 폴백해 시연 안정성 확보
+
+## 🖥️ 서비스 화면
+
+> 스크린샷/GIF 추가 예정
+
+## 🛠️ 기술 스택
+
+| 영역 | 스택 |
+|---|---|
+| Frontend | React 19, Vite, Leaflet + OpenStreetMap |
+| Backend | Node.js, Express 5 |
+| Database | Prisma ORM + SQLite |
+| 외부 API | Kakao 주소 검색(Geocoding) REST API |
+| 기타 | turf.js (관악구 경계 point-in-polygon 판별) |
+
+Kakao Maps JS SDK 연동은 준비만 되어 있고(`VITE_KAKAO_MAP_KEY`), 현재 지도 렌더링은 Leaflet/OpenStreetMap을 사용 중입니다 (전환 여부 팀 논의 중, 아래 진행 상황 참고).
+
+## 🏗️ 프로젝트 구조
+
+```
+frontend/            React (Vite)
+  src/components/
+    Onboarding/       프로필·주소 입력 온보딩 2단계
+    Main/             메인 화면(topbar + 사이드바 + 지도)
+  src/api/            백엔드 API 클라이언트 (safetyApi.js)
+  src/utils/          목업 안전점수 로직 (mockSafety.js, 백엔드 폴백용)
+  src/styles/         디자인 토큰 + 공통 스타일
+
+backend/             Express + Prisma(SQLite)
+  src/routes/          라우트 (지오코딩, 관악구 범위 판별)
+  src/controllers/     요청 처리
+  src/services/        점수 계산(카운트·정규화·등급)
+  src/utils/           거리 계산
+  prisma/              스키마, 마이그레이션, CSV 임포트/지오코딩 스크립트, 데이터 파일
+
+database/            초기 설계 스케치(schema.sql) — 실제 구현은 Prisma/SQLite 사용, 미연동
+```
+
+## 🔄 데이터 흐름
+
+```mermaid
+flowchart TD
+    A[사용자: 주소 검색] --> B[Frontend - React]
+    B -->|"GET /api/safety-score?address="| C[Backend - Express]
+    C --> D[Kakao 주소 검색 API로 지오코딩]
+    D --> E{관악구 21개 동 경계 안인가?<br/>turf.js}
+    E -- 아니오 422 --> B
+    E -- 예 --> F[반경 300m 내 CCTV·보안등 카운트<br/>최근접 파출소 거리]
+    F --> G[(SQLite<br/>SafetyData)]
+    F --> H[정규화 + 가중합<br/>CCTV 50% / 보안등 30% / 파출소 20%]
+    H --> I[등급 S~D 산출]
+    I --> B
+    B --> J[Leaflet 지도<br/>등급 원형 오버레이 + 시설 마커]
+    B --> K[사이드바<br/>등급 카드 + 지표]
+```
+
+백엔드가 꺼져있거나 오류가 나면(네트워크 실패·500), 프론트는 alert으로 알린 뒤 `mockSafety.js`의 결정적 목업 데이터로 자동 폴백합니다. 주소를 못 찾거나(404) 관악구 밖(422)인 경우는 폴백하지 않고 실제 에러를 그대로 보여줍니다.
+
+## 🚀 실행 방법
 
 처음 한 번만:
 
@@ -15,13 +81,13 @@
 npm run install:all
 ```
 
-두 서버를 동시에 실행:
+아래 "환경 변수 설정", "데이터베이스" 섹션을 먼저 진행한 뒤, 두 서버를 동시에 실행:
 
 ```
 npm run dev
 ```
 
-- 백엔드: http://localhost:4000
+- 백엔드: http://localhost:4000 (PORT 환경변수로 변경 가능)
 - 프론트엔드: http://localhost:5173
 
 개별 실행도 가능합니다.
@@ -31,219 +97,126 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-## 백엔드 초기 세팅 (안전점수 API 사용을 위한 필수 작업)
+## ⚙️ 환경 변수 설정
 
-`npm run install:all` 이후, 안전점수 API(`/api/safety-score`)를 실제로 호출하려면 아래 작업이 추가로 필요합니다 (팀원 각자 진행).
+**`backend/.env`**
 
-1. **카카오 API 키 발급**
-   - https://developers.kakao.com 접속 → 개인 계정으로 로그인
-   - [앱] > [애플리케이션 추가하기]로 앱 생성 (카테고리: 지도)
-   - 생성한 앱 > [앱] > [앱 키]에서 REST API 키 복사
-   - [제품 설정] > [카카오맵] > 사용 설정 ON
-
-2. **`.env` 설정**
-   `backend/.env` 파일 생성 후:
 ```
-   KAKAO_API_KEY=발급받은_REST_API_키
-   DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./dev.db"
+KAKAO_API_KEY=발급받은_Kakao_REST_API_키
+PORT=4000
 ```
 
-3. **DB 마이그레이션**
+- `KAKAO_API_KEY`: [Kakao Developers](https://developers.kakao.com)에서 애플리케이션 생성 → **REST API 키** 발급 (주소 검색/지오코딩용). 비워두면 `/api/safety-score`가 항상 500을 반환합니다.
+- `PORT`: 생략 시 기본 4000. 로컬에 이미 4000번 포트를 쓰는 프로세스(Docker/WSL 등)가 있으면 다른 값으로 지정하세요.
+
+**`frontend/.env`**
+
 ```
-   cd backend
-   npx prisma migrate dev
+VITE_API_URL=http://localhost:4000
+VITE_KAKAO_MAP_KEY=발급받은_Kakao_JavaScript_키
 ```
 
-4. **안전 데이터 임포트**
+- `VITE_API_URL`: 백엔드 주소. `backend/.env`의 `PORT`를 바꿨다면 이 값도 맞춰야 합니다.
+- `VITE_KAKAO_MAP_KEY`: Kakao Developers의 **JavaScript 키**(REST API 키와 다름). 현재 지도가 Leaflet이라 당장은 화면에 반영되지 않지만, Kakao Map 전환을 대비해 미리 설정해둘 수 있습니다.
+
+## 🗄️ 데이터베이스
+
+Prisma + SQLite. DB 파일은 `backend/prisma/dev.db`, 스키마는 `backend/prisma/schema.prisma`에서 관리합니다.
+
 ```
-   npm run import:safety-data
+# 스키마 수정 후 마이그레이션
+cd backend && npm run prisma:migrate
+
+# Prisma 클라이언트 재생성
+cd backend && npm run prisma:generate
+
+# DB GUI로 데이터 보기
+cd backend && npm run prisma:studio
 ```
 
-5. **서버 실행 후 테스트**
+**최초 세팅 시 데이터 채우기 (순서대로)**
+
 ```
-   npm run dev
+cd backend
+npx prisma migrate dev
+npm run import:safety-data          # 관악구 CCTV/보안등/파출소/범죄통계 CSV 15,399건 임포트
+node prisma/geocodePoliceStations.js  # 파출소 9건 좌표 지오코딩 (KAKAO_API_KEY 필요)
 ```
-   `http://localhost:4000/api/safety-score?address=서울시 관악구 신림동` 호출해서 정상 응답 확인
 
-## 데이터베이스 (Prisma + SQLite)
+마지막 지오코딩 스크립트를 건너뛰면 파출소 거리(`policeDistanceMeters`)가 항상 `null`로 나옵니다.
 
-DB 파일은 `backend/prisma/dev.db` 입니다. 스키마는 `backend/prisma/schema.prisma`에서 관리합니다.
-## 🔄 데이터 흐름도 (Data Flow Diagram)
+## 📡 API
 
-1. **사용자 요청**: 사용자가 검색할 주소 입력 (Frontend: React, Kakao Map)
-2. **주소-좌표 변환**: Backend(Node.js)에서 요청 수신 후 Kakao API를 통해 위/경도 좌표로 변환
-3. **DB 데이터 조회**: MySQL Database에서 변환된 좌표 기준 안전 시설물(CCTV, 보안등, 파출소) 및 범죄 통계 데이터 조회
-4. **안전 점수 계산**: 
-   - 평가 항목: CCTV 개수, 보안등 개수, 파출소 거리, 범죄 발생 건수
-   - 가중치 적용 (60% / 20% / 20%)
-   - 최종 S~D 등급 산출
-5. **API 응답 및 시각화**: 산출된 안전 점수/등급/시설 정보를 Frontend로 전달하여 히트맵 및 위치 표시
-
-- 스키마 수정 후 마이그레이션: `cd backend && npm run prisma:migrate`
-- Prisma 클라이언트 재생성: `cd backend && npm run prisma:generate`
-- DB GUI로 데이터 보기: `cd backend && npm run prisma:studio`
-
-## API 명세
-
-### `GET /api/health`
-
-서버가 살아있는지 확인하는 헬스체크용 엔드포인트.
-
-- 응답: `{ "status": "ok" }`
-
-### `GET /api/users` / `POST /api/users`
-
-`User` 모델 CRUD 동작 검증용으로 초기 세팅 때 추가한 API. 최신 사용자순으로 조회하거나, 이메일/이름을 받아 새 사용자를 생성한다.
-
-- `GET`: 응답은 `User[]` (id, email, name, createdAt)
-- `POST`: 요청 예시 `{ "email": "a@a.com", "name": "홍길동" }` — `email`이 없으면 400, 있으면 201과 함께 생성된 사용자 반환
-
-### `GET /api/safety-data`
-
-관악구 CCTV/보안등/파출소/범죄통계 원본 데이터(`SafetyData` 테이블)를 그대로 조회하는 API. 지도 시각화나 통계용으로 프론트에서 원본 데이터가 필요할 때 사용.
-
-- 쿼리
-  - `dataType` — `cctv` | `보안등` | `파출소` | `범죄통계` (생략 시 전체)
-  - `page` (기본 1), `pageSize` (기본 50, 최대 200)
-- 응답: `{ total, page, pageSize, items }` — `items`는 위/경도, CCTV 대수, 보안등 종류 등 CSV 원본 컬럼을 그대로 담은 레코드 배열
-- 예시: `GET /api/safety-data?dataType=cctv&page=1&pageSize=50`
+| Method | Path | 설명 |
+|---|---|---|
+| GET | `/api/health` | 헬스체크 |
+| GET | `/api/users`, POST `/api/users` | 초기 세팅 검증용 CRUD |
+| GET | `/api/safety-data` | CCTV/보안등/파출소/범죄통계 원본 데이터 조회 (`dataType`/`page`/`pageSize` 쿼리) |
+| GET | `/api/safety-score?address=` | **핵심 API.** 주소 → 실시간 안전점수/등급 |
 
 ### `GET /api/safety-score?address=...`
 
-주소를 입력하면 그 지점의 실시간 안전점수/등급을 계산해 주는 핵심 API (Phase 2, 반경 기반). "이 주소 근처가 얼마나 안전한가"를 CCTV·보안등 밀집도 및 파출소 근접도로 정량화하는 역할을 한다.
-
-내부 처리 흐름:
-
-1. **지오코딩**: `address`를 Kakao 주소 검색 API로 위/경도 좌표로 변환한다.
-2. **범위 판별**: 변환된 좌표가 관악구 21개 동 경계(`gwanak_dong_boundary.geojson`) 안에 있는지 turf.js의 point-in-polygon으로 확인한다. 범위 밖이면 422로 응답하고 계산을 진행하지 않는다.
-3. **시설 카운트**: 관악구 내(`isGwanak=true`) CCTV/보안등/파출소 데이터를 서버가 메모리에 캐싱해두고(요청마다 DB 왕복하지 않기 위함), 입력 좌표 기준 반경 300m 안에 있는 CCTV 개수와 보안등 개수, 그리고 가장 가까운 파출소까지의 거리를 실시간으로 계산한다.
-4. **정규화**: CCTV/보안등 개수는 `safety_score_config.json`에 저장된 min/max 기준(관악구 100m 격자 샘플링으로 산출)으로 0~100점으로 클리핑 정규화하고, 파출소는 거리가 가까울수록 높은 점수가 되도록 반대 방향으로 정규화한다 (현재 200~2000m 임시 기준, 격자 재보정 예정).
-5. **가중합 및 등급화**: CCTV 점수 50% + 보안등 점수 30% + 파출소 점수 20%로 최종 점수를 합산하고, `gradeCutoffs` 기준값과 비교해 S~D 5등급 중 하나를 매긴다.
-
-- 쿼리: `address` (필수)
-- 응답 예시:
+**응답 예시**
 ```json
-  {
-    "address": "서울특별시 관악구 신림동 ...",
-    "lat": 37.489,
-    "lng": 126.926,
-    "grade": "A",
-    "score": 72,
-    "details": { "radiusMeters": 300, "cctvCount": 34, "lampCount": 293, "policeDistanceMeters": 817 },
-    "meta": { "phase": 2, "method": "radius", "note": "..." }
-  }
-```
-- 에러 응답
-  - `400` — `address` 쿼리 누락
-  - `404` — Kakao 지오코딩 결과 없음 (존재하지 않는 주소)
-  - `422` — 좌표는 나왔지만 관악구 범위 밖인 주소
-  - `500` — 그 외 서버 오류
-- 관련 코드: `backend/src/routes/safety.routes.js`(지오코딩·범위 판별·라우트 등록), `backend/src/controllers/safety.controller.js`(요청 처리), `backend/src/services/score.service.js`(카운트·정규화·등급 계산), `backend/src/utils/distance.js`(거리 계산)
-- `KAKAO_API_KEY` 설정 및 DB 마이그레이션/데이터 임포트까지 완료 후 실제 호출 테스트 완료 (예: `address=서울시 관악구 신림동` → grade A, score 72, Phase 2 반영 후 기준)
-
-## 관악구 안전데이터 (CSV 임포트)
-
-CCTV/보안등/파출소/범죄통계가 통합된 CSV(`backend/prisma/data/gwanak_safety_data.csv`)를 `SafetyData` 테이블로 가져옵니다.
-
-```
-cd backend && npm run import:safety-data
+{
+  "address": "서울시 관악구 신림동",
+  "lat": 37.489,
+  "lng": 126.926,
+  "grade": "A",
+  "score": 72,
+  "details": { "radiusMeters": 300, "cctvCount": 34, "lampCount": 293, "policeDistanceMeters": 817 },
+  "meta": { "phase": 2, "method": "radius", "note": "..." }
+}
 ```
 
-재실행하면 기존 데이터를 지우고 다시 채웁니다.
+**에러 응답**
 
-## 진행 상황
+| 상태 코드 | 의미 |
+|---|---|
+| 400 | `address` 쿼리 누락 |
+| 404 | Kakao 지오코딩 결과 없음 (존재하지 않는 주소) |
+| 422 | 좌표는 나왔지만 관악구 범위 밖 |
+| 500 | 서버 내부 오류 (예: `KAKAO_API_KEY` 미설정) |
 
-### 1. 프로젝트 초기 세팅 (모노레포)
+관련 코드: `backend/src/routes/safety.routes.js`(지오코딩·범위 판별) · `controllers/safety.controller.js`(요청 처리) · `services/score.service.js`(카운트·정규화·등급) · `utils/distance.js`(거리 계산)
 
-- 백엔드: Express + Prisma ORM + SQLite (`backend/prisma/dev.db`)
-  - 처음엔 최신 Prisma 7이 자동 설치됐는데 드라이버 어댑터 강제 등 구조가 크게 바뀌어 있어, 안정 버전인 Prisma 6.19.3으로 맞춰 세팅
-  - `User` 모델, API: `GET /api/health`, `GET/POST /api/users`
-- 프론트엔드: Vite + React
-  - `/api/users` 호출해서 목록 조회 + 등록 폼 구현
-  - `.env`의 `VITE_API_BASE_URL`로 백엔드 주소 지정
-- 두 서버를 실제로 띄워서 사용자 생성 → 조회까지 curl로 동작 검증 완료
+## 📊 안전점수 계산
 
-### 2. 관악구 안전데이터 CSV → DB 임포트
+1. **지오코딩**: 주소를 Kakao API로 위/경도 변환
+2. **범위 판별**: 관악구 21개 동 경계(`gwanak_dong_boundary.geojson`) 안인지 turf.js로 확인
+3. **집계**: 반경 300m 내 CCTV·보안등 개수, 최근접 파출소까지 거리 계산 (서버 시작 시 메모리 캐싱)
+4. **정규화**: 관악구 내부 100m 격자(약 3,762개 지점) 샘플링으로 산출한 기준값으로 0~100점 정규화. 파출소는 가까울수록 높은 점수(현재 200~2000m는 격자 재보정 전 임시값)
+5. **가중합**: CCTV 50% + 보안등 30% + 파출소 20%
+6. **등급화**: 점수 구간별 S~D 등급 매핑 (`gradeCutoffs` 기준)
 
-- 카카오톡으로 받은 `관악구_안전데이터_통합 (1).csv` (CCTV/보안등/파출소/범죄통계 통합, 15,399행)를 `backend/prisma/data/gwanak_safety_data.csv`로 프로젝트에 복사
-- Prisma 스키마에 `SafetyData` 모델 추가 (원본 CSV 컬럼 구조를 그대로 반영: dataType, sourceId, name, address, lat/lng, cctv/lamp/police/crime 관련 필드 등)
-- 임포트 스크립트 `backend/prisma/importSafetyData.js` (`npm run import:safety-data`)
-  - CSV BOM 제거, 주소 필드 안 쉼표 등을 정확히 처리하는 CSV 파서(csv-parse) 사용
-- 15,399건 전량 저장 완료 — cctv 2,106 / 보안등 13,283 / 파출소 9 / 범죄통계 1 (원본과 정확히 일치 확인)
-- 확인용 API 추가: `GET /api/safety-data?dataType=...&page=...&pageSize=...`
+## 📍 데이터
 
-### 3. 관악구 데이터 행정동 코드(dong_code) 매핑
+- **관악구 안전데이터** (`backend/prisma/data/gwanak_safety_data.csv`) — 총 15,399건
+  - CCTV 2,106 · 보안등 13,283 · 파출소 9 · 범죄통계 1
+  - `dong_code`/`dong_name`/`sgg_code`/`is_gwanak` 행정동 코드 매핑 완료 (좌표 있는 15,389건 전부, `vuski/admdongkor`(GitHub) 경계 기준 point-in-polygon)
+- **관악구 21개 동 경계** (`gwanak_dong_boundary.geojson`) — 관악구 범위 판별 및 동 매핑에 사용
+- **안전점수 설정** (`safety_score_config.json`) — 반경/가중치/정규화 기준값/등급 컷오프
 
-- 기존 `gwanak_safety_data.csv`(15,399건)에 행정동 코드 관련 컬럼 4개 추가
-  - `dong_code` (10자리 행정기관코드)
-  - `dong_name` (동 이름, 예: 신림동)
-  - `sgg_code` (5자리 구 코드, 관악구는 `11620`)
-  - `is_gwanak` (좌표가 실제 관악구 행정동 경계 안인지 boolean)
-- `vuski/admdongkor`(GitHub) 전국 행정동 경계 GeoJSON을 기준으로 point-in-polygon 매칭 수행
-- 좌표가 있는 15,389건 전부 동 코드 매칭 완료 (파출소 9건 + 범죄통계 1건은 원본에 위경도가 없어 매칭 불가, 별도 지오코딩 필요)
-- 45건(cctv 9 + 보안등 36)은 주소는 관악구지만 실제 좌표가 동작구/금천구/과천시 경계에 걸쳐있는 것으로 확인 (`is_gwanak=false`로 분리 처리, 삭제하지 않고 원본 보존)
-- Prisma 스키마(`SafetyData` 모델)에 `dongCode`, `dongName`, `sggCode`, `isGwanak` 필드 추가 및 마이그레이션 완료, 재임포트 후 건수 검증 완료
+## 📈 현재 진행 상황
 
-### 4. 안전점수 계산 로직 및 API (Phase 1)
+- [x] 모노레포 초기 세팅 (Express + Prisma/SQLite, React + Vite)
+- [x] 관악구 안전데이터 CSV 임포트 (15,399건)
+- [x] 행정동 코드(dong_code) 매핑
+- [x] 안전점수 계산 로직 및 API — Phase 1 (CCTV + 보안등)
+- [x] 파출소 지오코딩 + Phase 2 (파출소 거리 반영, 가중치 50/30/20 재조정)
+- [x] 프론트엔드 디자인 프로토타입 기반 재작성 (온보딩 + 메인 화면, Leaflet 지도)
+- [x] 프론트-백엔드 실제 API 연동 (mock → 실제 API, 실패 시 자동 폴백)
+- [ ] Kakao Map으로 지도 전환 여부 결정 (현재 Leaflet/OSM)
+- [ ] 범죄 데이터 반영 방식 결정 (생활안전지도 API가 WMS 이미지 형식이라 수치화 까다로움)
+- [ ] 격자 정규화 재보정 (CCTV·보안등 하위 20% 쏠림 현상, 파출소 임시 기준값 재산출)
+- [ ] 온보딩에서 받은 사용자 정보(이름·나이·성별)를 실제 맞춤형 로직에 반영할지 검토
+- [ ] 사용자 인증
 
-- 방식: 동 단위 사전 계산이 아니라, 입력 좌표 기준 반경 실시간 계산 방식으로 설계 (같은 동 안에서도 위치별로 점수가 달라짐)
-- 계산 흐름: 주소 입력 → Kakao 지오코딩(좌표 변환) → 관악구 경계 판별(turf.js) → 반경 300m 내 CCTV/보안등 개수 집계 → 정규화(0~100) → 가중합(CCTV 60% + 보안등 40%) → S~D 5등급 산출
-- 정규화 기준값은 관악구 내부 100m 격자(약 3,762개 지점) 샘플링으로 산출 (5~95 백분위 기준)
-- 현재는 Phase 1로 CCTV/보안등 밀도만 반영. 파출소 근접도·범죄 발생 데이터는 Phase 2로 예정 (아래 "다음에 이어서 할 수 있는 것" 참고)
-- API: `GET /api/safety-score?address=...`
-  - 응답 예시:
-    ```json
-    {
-      "address": "서울특별시 관악구 신림동 ...",
-      "lat": 37.48,
-      "lng": 126.93,
-      "grade": "A",
-      "score": 70.7,
-      "details": { "radiusMeters": 300, "cctvCount": 12, "lampCount": 45 },
-      "meta": { "phase": 1, "method": "radius", "note": "..." }
-    }
-    ```
-- 코드 구성 (프로젝트의 라우트/컨트롤러/서비스 구조에 맞춰 분리)
-  - `backend/src/utils/distance.js` — 좌표 간 거리 계산
-  - `backend/src/services/score.service.js` — 반경 내 카운트, 정규화, 등급 계산
-  - `backend/src/routes/safety.routes.js` — Kakao 지오코딩, 관악구 범위 판별, 라우트 등록
-  - `backend/src/controllers/safety.controller.js` — 요청 처리 핸들러
-  - `backend/prisma/data/gwanak_dong_boundary.geojson` — 관악구 21개 동 경계 (범위 판별용)
-  - `backend/prisma/data/safety_score_config.json` — 반경/가중치/정규화 기준값/등급 컷오프
+## 👥 팀
 
-### 5. 파출소 지오코딩 및 Phase 2 점수 계산 반영
+> 팀원 정보 추가 예정
 
-- 파출소 데이터는 원본 CSV에 위경도가 없어 Phase 1 계산에는 반영되지 않았음 → `backend/prisma/geocodePoliceStations.js` 스크립트로 파출소 9건의 주소를 Kakao API로 지오코딩하고, 관악구 동 경계와 대조해 `dongCode`/`dongName`/`isGwanak` 매핑 완료 (9건 전부 관악구 내부 확인)
-- 안전점수 계산 로직에 파출소 항목 추가 (Phase 2)
-  - 반경 내 "개수"가 아니라 입력 좌표에서 **가장 가까운 파출소까지의 거리**를 기준으로 계산 (`backend/src/utils/distance.js`의 `nearestDistanceMeters`)
-  - 거리가 가까울수록 높은 점수가 되도록 반대 방향으로 정규화 (`backend/src/services/score.service.js`의 `normalizeDistance`)
-  - 가중치를 CCTV 60% / 보안등 40%에서 **CCTV 50% / 보안등 30% / 파출소 20%**로 재조정 (팀 논의로 최종 확정 필요)
-  - 파출소 거리 정규화 기준(현재 200~2000m)은 격자 샘플링 없이 임시로 설정한 값 — 아래 "격자 정규화 재보정" 작업 때 함께 재산출 필요
-- API 응답의 `meta.phase`가 1 → 2로 변경, `details`에 `policeDistanceMeters` 추가
-  - 예시: `address=서울시 관악구 신림동` → `grade: A`, `score: 72`, `policeDistanceMeters: 817`
+## 📄 License
 
-### 6. 프론트엔드 디자인 프로토타입 기반 재작성
-
-- 디자인팀이 전달한 정적 프로토타입(`index.html`)을 기준으로 프론트엔드를 전면 재작성. 레이아웃·컴포넌트 구조·폰트·간격은 그대로 따르고, 색상 체계만 초록 계열(`--primary: #2ECC71`)로 교체
-- `frontend/src/styles/variables.css`(디자인 토큰)와 `frontend/src/styles/global.css`(온보딩·메인 화면 공통 스타일)로 분리
-- 온보딩 2단계 구현
-  - `components/Onboarding/StepProfile.jsx` — 이름/나이/성별 입력
-  - `components/Onboarding/StepAddress.jsx` — 주소 입력 + 동 이름 자동완성(프로토타입의 `DONG_LIST` 그대로 사용)
-- 메인 화면(사이드바 + 지도) 구현
-  - `components/Main/MainLayout.jsx` — topbar + 사이드바 + 지도 레이아웃
-  - `SearchPanel.jsx`(검색바/홈카드/최근검색), `ResultPanel.jsx`(등급 링 차트 애니메이션 + 지표 4칸), `DetailPanel.jsx`(필터 칩 + 주변 시설 목록)
-  - `MapView.jsx` — Kakao 대신 **Leaflet + OpenStreetMap**으로 구현(프로토타입과 동일한 방식). 등급 원형 오버레이, 시설 마커, 필터 칩에 따른 마커 토글까지 동작 확인
-- 안전 점수는 아직 백엔드 API가 아니라 `utils/mockSafety.js`(주소 문자열을 시드로 한 결정적 목업 데이터)를 사용 — 실제 데이터 아님, 나중에 `api/safetyApi.js` 호출로 교체할 예정이라 의도적으로 분리해둠
-- 기존에 프론트에서 CSV를 직접 읽어 점수를 계산하던 로직(`csvParser.js`, `scoreCalculator.js`, `geoUtils.js`, `public/data.csv`)과 반응형 데스크탑/모바일 분기 컴포넌트(`DesktopShell`, `MainMap`, `SidePanel`, `SearchPanelContent`, `useLocationSearch`)는 전부 제거
-
-### 다음에 이어서 할 수 있는 것
-
-- [완료] 지도에 위경도 시각화 — Leaflet + OpenStreetMap 기반 메인 화면 구현 완료 (단, 안전점수는 아직 `mockSafety.js` 목업 데이터 기준이며 백엔드 연동 전)
-- [완료] `axios`/`@turf/turf` 설치, `app.js` 라우트 등록, `KAKAO_API_KEY` 설정 및 실제 API 호출 테스트 완료
-- [완료] 파출소 9건 좌표 지오코딩 및 Phase 2 점수 계산 반영 (위 5번 참고)
-- `mockSafety.js` 목업을 백엔드 `/api/safety-score` 실제 호출(`api/safetyApi.js`)로 교체 — 백엔드 응답엔 개별 시설 좌표·범죄·조명 데이터가 없어 지도 마커/상세 목록 표시 방식을 같이 재검토해야 함
-- 지도를 Kakao Map으로 전환할지 결정 (현재는 임시로 Leaflet/OSM 사용 중, `index.html`엔 카카오맵 SDK 스크립트가 이미 남아있음)
-- 온보딩에서 받은 사용자 정보(이름/나이/성별)를 실제 맞춤형 안전 정보 로직에 반영할지 검토 (현재는 아바타 이니셜 표시 용도로만 쓰임)
-- 범죄 데이터 반영 방식 결정 (생활안전지도 API는 WMS 이미지 형식이라 동 단위 수치화가 까다로움 — 팀 논의 필요)
-- 격자 정규화 재보정 검토 (CCTV/보안등: 현재 하위 20% 구간 점수가 0으로 몰리는 현상 있음. 파출소: 현재 임시값(200~2000m)으로 되어 있어 실제 격자 샘플링으로 기준값 재산출 필요. 필요시 샘플링 범위를 주거지역으로 조정)
-- 사용자 인증
+> 라이선스 미정
