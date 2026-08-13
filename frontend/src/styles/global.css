@@ -640,12 +640,7 @@ input.text-input::placeholder {
   line-height: 1.6;
 }
 
-/* leaflet marker tweaks */
-.grade-overlay-label {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
+/* 지도 마커(Kakao CustomOverlay content) */
 .pin-badge {
   width: 30px;
   height: 30px;
@@ -659,7 +654,4 @@ input.text-input::placeholder {
 .pin-badge span {
   transform: rotate(45deg);
   font-size: 14px;
-}
-.leaflet-control-attribution {
-  font-size: 10px;
 }

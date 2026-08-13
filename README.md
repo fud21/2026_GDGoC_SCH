@@ -12,7 +12,7 @@
 
 - 주소 검색 기반 실시간 안전점수·등급(S~D) 계산
 - 반경 300m 내 CCTV·보안등 개수, 최근접 파출소 거리 분석
-- Leaflet 지도 시각화 — 등급 원형 오버레이, 주변 시설 마커, 시설 타입별 필터
+- Kakao Map 지도 시각화 — 등급 원형 오버레이, 주변 시설 마커, 시설 타입별 필터
 - 온보딩(이름·나이·성별, 거주 동 등록) 및 최근 검색 기록(최대 6건)
 - 백엔드 미연결 시 데모(mock) 데이터로 자동 폴백해 시연 안정성 확보
 
@@ -24,13 +24,13 @@
 
 | 영역 | 스택 |
 |---|---|
-| Frontend | React 19, Vite, Leaflet + OpenStreetMap |
+| Frontend | React 19, Vite, Kakao Maps JS SDK |
 | Backend | Node.js, Express 5 |
 | Database | Prisma ORM + SQLite |
 | 외부 API | Kakao 주소 검색(Geocoding) REST API |
 | 기타 | turf.js (관악구 경계 point-in-polygon 판별) |
 
-Kakao Maps JS SDK 연동은 준비만 되어 있고(`VITE_KAKAO_MAP_KEY`), 현재 지도 렌더링은 Leaflet/OpenStreetMap을 사용 중입니다 (전환 여부 팀 논의 중, 아래 진행 상황 참고).
+지도 렌더링은 Kakao Maps JS SDK(`VITE_KAKAO_MAP_KEY`)를 사용합니다. 이전에는 Leaflet/OpenStreetMap을 썼으나 전환 완료했습니다.
 
 ## 🏗️ 프로젝트 구조
 
@@ -67,7 +67,7 @@ flowchart TD
     F --> H[정규화 + 가중합<br/>CCTV 50% / 보안등 30% / 파출소 20%]
     H --> I[등급 S~D 산출]
     I --> B
-    B --> J[Leaflet 지도<br/>등급 원형 오버레이 + 시설 마커]
+    B --> J[Kakao Map<br/>등급 원형 오버레이 + 시설 마커]
     B --> K[사이드바<br/>등급 카드 + 지표]
 ```
 
@@ -118,7 +118,7 @@ VITE_KAKAO_MAP_KEY=발급받은_Kakao_JavaScript_키
 ```
 
 - `VITE_API_URL`: 백엔드 주소. `backend/.env`의 `PORT`를 바꿨다면 이 값도 맞춰야 합니다.
-- `VITE_KAKAO_MAP_KEY`: Kakao Developers의 **JavaScript 키**(REST API 키와 다름). 현재 지도가 Leaflet이라 당장은 화면에 반영되지 않지만, Kakao Map 전환을 대비해 미리 설정해둘 수 있습니다.
+- `VITE_KAKAO_MAP_KEY`: Kakao Developers의 **JavaScript 키**(REST API 키와 다름). 지도 렌더링에 실제로 사용되므로 비워두면 지도가 뜨지 않습니다.
 
 ## 🗄️ 데이터베이스
 
@@ -205,9 +205,9 @@ node prisma/geocodePoliceStations.js  # 파출소 9건 좌표 지오코딩 (KAKA
 - [x] 행정동 코드(dong_code) 매핑
 - [x] 안전점수 계산 로직 및 API — Phase 1 (CCTV + 보안등)
 - [x] 파출소 지오코딩 + Phase 2 (파출소 거리 반영, 가중치 50/30/20 재조정)
-- [x] 프론트엔드 디자인 프로토타입 기반 재작성 (온보딩 + 메인 화면, Leaflet 지도)
+- [x] 프론트엔드 디자인 프로토타입 기반 재작성 (온보딩 + 메인 화면, 지도)
 - [x] 프론트-백엔드 실제 API 연동 (mock → 실제 API, 실패 시 자동 폴백)
-- [ ] Kakao Map으로 지도 전환 여부 결정 (현재 Leaflet/OSM)
+- [x] Kakao Map으로 지도 전환 (Leaflet/OSM → Kakao Maps JS SDK)
 - [ ] 범죄 데이터 반영 방식 결정 (생활안전지도 API가 WMS 이미지 형식이라 수치화 까다로움)
 - [ ] 격자 정규화 재보정 (CCTV·보안등 하위 20% 쏠림 현상, 파출소 임시 기준값 재산출)
 - [ ] 온보딩에서 받은 사용자 정보(이름·나이·성별)를 실제 맞춤형 로직에 반영할지 검토
