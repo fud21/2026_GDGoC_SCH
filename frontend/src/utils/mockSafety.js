@@ -14,6 +14,18 @@ export const GRADE_DESC = {
   D: '안전 인프라가 부족한 지역이에요. 밤늦은 단독 이동은 피해주세요.',
 };
 
+// 관악구 전체 범죄현황 (2024년 관악경찰서 기준) — 실제 DB(SafetyData, dataType="범죄통계") 값과 동일.
+// 구 전체 집계라 주소별로 달라지지 않으므로 랜덤 생성하지 않고 고정값을 그대로 씀.
+// DB 값(backend/prisma/importSafetyData.js가 읽는 CSV)이 갱신되면 이 상수도 함께 갱신할 것.
+export const CRIME_STAT = {
+  source: '서울관악서', // DB의 SafetyData.name 값과 동일하게 맞춤
+  year: 2024,
+  kill: 4,
+  rob: 3,
+  theft: 1971,
+  violence: 2169,
+};
+
 export const TYPE_META = {
   cctv: { color: '#3182F6', glyph: '🎥', label: 'CCTV' },
   light: { color: '#F2A900', glyph: '💡', label: '보안등' },
@@ -83,5 +95,5 @@ export function computeSafety(addr) {
   });
   facilities.sort((a, b) => a.dist - b.dist);
 
-  return { addr, latlng, score, grade, cctv, light, police, traffic, facilities };
+  return { addr, latlng, score, grade, cctv, light, police, traffic, facilities, crime: CRIME_STAT };
 }

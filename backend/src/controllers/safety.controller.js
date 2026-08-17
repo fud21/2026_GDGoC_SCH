@@ -22,6 +22,26 @@ async function getFacilities() {
   return facilitiesCache;
 }
 
+// ── 범죄 통계 캐싱 (관악구 전체 집계, 검색 주소와 무관하게 항상 동일) ──
+// 점수 계산에는 쓰이지 않는 참고용 정보라 별도로 캐싱한다.
+let crimeStatCache = null;
+async function getCrimeStat() {
+  if (crimeStatCache) return crimeStatCache;
+  const row = await prisma.safetyData.findFirst({
+    where: { dataType: "범죄통계" },
+  });
+  if (!row) return null;
+  crimeStatCache = {
+    source: row.name,
+    year: row.crimeYear,
+    kill: row.crimeKill,
+    rob: row.crimeRob,
+    theft: row.crimeTheft,
+    violence: row.crimeViolence,
+  };
+  return crimeStatCache;
+}
+
 async function getSafetyScore(req, res) {
   const { address } = req.query;
   if (!address) {
@@ -44,6 +64,7 @@ async function getSafetyScore(req, res) {
 
     const facilities = await getFacilities();
     const result = computeSafetyScore(coord.lat, coord.lng, facilities);
+    const crime = await getCrimeStat();
 
     return res.json({
       address,
@@ -57,10 +78,11 @@ async function getSafetyScore(req, res) {
         lampCount: result.lampCount,
         policeDistanceMeters: result.policeDistance,
       },
+      crime,
       meta: {
         phase: 2,
         method: "radius",
-        note: "입력 좌표 반경 300m 내 CCTV/보안등 밀집도 및 최근접 파출소 거리 기준 점수입니다. 파출소 거리 정규화 기준은 격자 샘플링 전 임시값이며, 범죄 데이터는 추후 반영 예정입니다.",
+        note: "입력 좌표 반경 300m 내 CCTV/보안등 밀집도 및 최근접 파출소 거리 기준 점수입니다. 파출소 거리 정규화 기준은 격자 샘플링 전 임시값입니다. crime 필드는 관악구 전체 집계 통계로, 점수 계산에는 반영되지 않는 참고용 정보입니다.",
       },
     });
   } catch (err) {

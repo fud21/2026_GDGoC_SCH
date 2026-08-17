@@ -50,6 +50,33 @@ export default function DetailPanel({ result, onBack, activeFilters, onToggleFil
       )}
 
       <div className="note-box">지도 마커는 서비스 소개를 위한 예시 위치이며, 실제 CCTV·보안등·파출소 데이터가 아닙니다.</div>
+
+      {result.crime && (
+        <>
+          <div className="section-label">
+            관악구 전체 범죄현황 ({result.crime.year}년 · {result.crime.source} 기준)
+          </div>
+          <div className="metric-grid">
+            <div className="metric-box">
+              <div className="k">절도</div>
+              <div className="v">{result.crime.theft}<span> 건</span></div>
+            </div>
+            <div className="metric-box">
+              <div className="k">폭력</div>
+              <div className="v">{result.crime.violence}<span> 건</span></div>
+            </div>
+            <div className="metric-box">
+              <div className="k">강도</div>
+              <div className="v">{result.crime.rob}<span> 건</span></div>
+            </div>
+            <div className="metric-box">
+              <div className="k">살인</div>
+              <div className="v">{result.crime.kill}<span> 건</span></div>
+            </div>
+          </div>
+          <div className="note-box">이 통계는 검색 주소가 아닌 관악구 전체 기준입니다.</div>
+        </>
+      )}
     </div>
   );
 }

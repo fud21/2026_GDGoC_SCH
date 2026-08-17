@@ -23,7 +23,7 @@ export async function fetchSafetyScore(address) {
 // 주의: 백엔드는 개별 시설 좌표 목록과 환경조명(밝기)·범죄통계·야간 통행량을 내려주지 않는다.
 // 없는 값은 지어내지 않고 traffic만 임시 고정값("보통")을 쓰고, facilities는 빈 배열로 둔다.
 export function toAnalysisResult(apiResponse) {
-  const { address, lat, lng, grade, score, details } = apiResponse;
+  const { address, lat, lng, grade, score, details, crime } = apiResponse;
 
   return {
     addr: address,
@@ -35,5 +35,6 @@ export function toAnalysisResult(apiResponse) {
     police: details.policeDistanceMeters,
     traffic: '보통', // API에 없는 필드 — 임시 고정값
     facilities: [], // API가 개별 시설 좌표를 내려주지 않음
+    crime, // 관악구 전체 집계 참고용 통계 (검색 주소와 무관하게 항상 동일값) — 그대로 통과
   };
 }
