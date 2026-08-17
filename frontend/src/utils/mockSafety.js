@@ -95,5 +95,5 @@ export function computeSafety(addr) {
   });
   facilities.sort((a, b) => a.dist - b.dist);
 
-  return { addr, latlng, score, grade, cctv, light, police, traffic, facilities, crime: CRIME_STAT };
+  return { addr, latlng, score, grade, cctv, light, police, traffic, facilities, crime: CRIME_STAT, isMock: true };
 }

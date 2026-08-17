@@ -44,12 +44,14 @@ export default function DetailPanel({ result, onBack, activeFilters, onToggleFil
         </div>
       ) : (
         <div className="empty-hint">
-          <div className="big">🚧</div>
-          상세 시설 위치 데이터는 추후 업데이트 예정입니다
+          <div className="big">🔍</div>
+          주변에서 시설 데이터를 찾지 못했어요
         </div>
       )}
 
-      <div className="note-box">지도 마커는 서비스 소개를 위한 예시 위치이며, 실제 CCTV·보안등·파출소 데이터가 아닙니다.</div>
+      {result.isMock && (
+        <div className="note-box">지도 마커는 서비스 소개를 위한 예시 위치이며, 실제 CCTV·보안등·파출소 데이터가 아닙니다.</div>
+      )}
 
       {result.crime && (
         <>
