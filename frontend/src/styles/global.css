@@ -190,7 +190,8 @@ input.text-input::placeholder {
 .addr-suggest-item:last-child {
   border-bottom: none;
 }
-.addr-suggest-item:hover {
+.addr-suggest-item:hover,
+.addr-suggest-item.active {
   background: var(--bg-soft);
 }
 .addr-suggest-item .pin {
@@ -199,6 +200,25 @@ input.text-input::placeholder {
 }
 .addr-suggest-item b {
   font-weight: 700;
+}
+.addr-suggest-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.addr-suggest-main {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.addr-suggest-sub {
+  font-size: 12px;
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .addr-suggest-empty {
   padding: 16px 14px;
