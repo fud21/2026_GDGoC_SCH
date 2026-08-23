@@ -15,6 +15,14 @@ type SimulationInput = {
   interventions?: Intervention[];
 };
 
+type SimulationCell = {
+  x: number;
+  y: number;
+  elevation: number;
+  depth: number;
+  arrival: number;
+};
+
 const WIDTH = 32;
 const HEIGHT = 22;
 
@@ -73,7 +81,7 @@ function calculate(input: Required<Omit<SimulationInput, "interventions">> & {
     1.35,
   );
 
-  const cells = [];
+  const cells: SimulationCell[] = [];
 
   for (let y = 0; y < HEIGHT; y += 1) {
     for (let x = 0; x < WIDTH; x += 1) {
@@ -204,6 +212,18 @@ export async function POST(request: Request) {
   return Response.json({
     ...scenario,
     grid: { width: WIDTH, height: HEIGHT, cellMeters: 50 },
+    region: {
+      id: "pohang-naengcheon",
+      name: "포항시 냉천 하류",
+      center: { lat: 35.99035, lng: 129.4027 },
+      bounds: {
+        north: 35.9958,
+        south: 35.9848,
+        east: 129.4116,
+        west: 129.3938,
+      },
+      coordinateSystem: "WGS84",
+    },
     comparison: {
       baselineRisk: baseline.metrics.riskScore,
       deltaRisk: scenario.metrics.riskScore - baseline.metrics.riskScore,

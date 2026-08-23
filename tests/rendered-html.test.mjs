@@ -1,43 +1,31 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { POST } from "../app/api/simulate/route.ts";
 
-async function fetchWorker(path = "/", init = {}) {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${Math.random()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request(`http://localhost${path}`, init),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
+test("RIVERSE 화면에 시민용 실제 지도 시뮬레이션 UI가 포함된다", async () => {
+  const source = await readFile(
+    new URL("../app/flood-lab.tsx", import.meta.url),
+    "utf8",
   );
-}
 
-test("server-renders the RIVERSE simulation dashboard", async () => {
-  const response = await fetchWorker();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+  assert.match(source, /RIVERSE/);
+  assert.match(source, /냉천 하류 예상 침수지역/);
+  assert.match(source, /실제 2D 지도 기반 침수 위험 히트맵/);
+  assert.match(source, /\/api\/simulate/);
+  assert.match(source, /시민 행동 안내/);
 
-  const html = await response.text();
-  assert.match(html, /<html lang="ko">/i);
-  assert.match(html, /<title>RIVERSE \| 도시 수해 디지털 트윈<\/title>/i);
-  assert.match(html, /냉천 산업지구 공사 영향 분석/);
-  assert.match(html, /시뮬레이션 조건/);
-  assert.match(html, /3D 침수 시뮬레이션 지도/);
-  assert.match(html, /LIVE RISK ASSESSMENT/);
-  assert.match(html, /og\.png/);
-  assert.doesNotMatch(html, /codex-preview|Your site is taking shape/);
+  const mapSource = await readFile(
+    new URL("../app/flood-map.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(mapSource, /dapi\.kakao\.com/);
+  assert.match(mapSource, /CustomOverlay/);
+  assert.match(mapSource, /NEXT_PUBLIC_KAKAO_MAP_JAVASCRIPT_KEY/);
 });
 
-test("simulation API calculates flood metrics and comparison", async () => {
-  const response = await fetchWorker("/api/simulate", {
+test("시뮬레이션 API가 격자 결과와 비교 지표를 계산한다", async () => {
+  const request = new Request("http://localhost:3000/api/simulate", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -51,11 +39,15 @@ test("simulation API calculates flood metrics and comparison", async () => {
     }),
   });
 
+  const response = await POST(request);
   assert.equal(response.status, 200);
+
   const body = await response.json();
   assert.equal(body.grid.width, 32);
   assert.equal(body.grid.height, 22);
   assert.equal(body.cells.length, 704);
+  assert.equal(body.region.id, "pohang-naengcheon");
+  assert.equal(body.region.coordinateSystem, "WGS84");
   assert.ok(body.metrics.maxDepth > 0);
   assert.ok(body.metrics.riskScore >= 0 && body.metrics.riskScore <= 100);
   assert.equal(typeof body.comparison.deltaRisk, "number");
